@@ -3,9 +3,10 @@ import 'package:flutter/foundation.dart';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
-  static SupabaseClient get _client => Supabase.instance.client;
+  // Make client getter public
+  static SupabaseClient get client => Supabase.instance.client;
 
-  // Auth methods
+  // ENHANCED Auth methods
   static Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -13,14 +14,17 @@ class SupabaseService {
     required String lastName,
     String? username,
   }) async {
-    return await _client.auth.signUp(
+    print('📝 Creating new account for: $email');
+
+    return await client.auth.signUp(
       email: email,
       password: password,
       data: {
         'first_name': firstName,
         'last_name': lastName,
         'full_name': '$firstName $lastName',
-        'username': username,
+        'username': username ?? email.split('@')[0],
+        'email': email,
       },
     );
   }
@@ -29,32 +33,37 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    return await _client.auth.signInWithPassword(
+    print('🔐 Signing in user: $email');
+
+    return await client.auth.signInWithPassword(
       email: email,
       password: password,
     );
   }
 
   static Future<void> signOut() async {
-    await _client.auth.signOut();
+    print('👋 Signing out current user...');
+    await client.auth.signOut();
   }
 
-  static User? get currentUser => _client.auth.currentUser;
+  static User? get currentUser => client.auth.currentUser;
 
-  static Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
+  static Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
 
   // Profile methods
   static Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
-      final response = await _client
+      print('👤 Loading profile for user: $userId');
+      final response = await client
           .from('profiles')
           .select()
           .eq('id', userId)
           .single();
 
+      print('✅ Profile loaded successfully');
       return response;
     } catch (e) {
-      print('Error getting profile: $e');
+      print('❌ Error getting profile: $e');
       return null;
     }
   }
@@ -63,7 +72,8 @@ class SupabaseService {
     required String userId,
     required Map<String, dynamic> data,
   }) async {
-    await _client
+    print('📝 Updating profile for user: $userId');
+    await client
         .from('profiles')
         .update(data)
         .eq('id', userId);
@@ -75,7 +85,8 @@ class SupabaseService {
     int offset = 0,
   }) async {
     try {
-      final response = await _client
+      print('📋 Loading projects...');
+      final response = await client
           .from('projects')
           .select('''
             *,
@@ -89,9 +100,10 @@ class SupabaseService {
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
 
+      print('✅ Loaded ${response.length} projects');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error getting projects: $e');
+      print('❌ Error getting projects: $e');
       return [];
     }
   }
@@ -102,7 +114,8 @@ class SupabaseService {
     int offset = 0,
   }) async {
     try {
-      final response = await _client
+      print('📅 Loading events...');
+      final response = await client
           .from('events')
           .select('''
             *,
@@ -116,17 +129,18 @@ class SupabaseService {
           .order('event_date', ascending: true)
           .range(offset, offset + limit - 1);
 
+      print('✅ Loaded ${response.length} events');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error getting events: $e');
+      print('❌ Error getting events: $e');
       return [];
     }
   }
 
-  // FIXED Google OAuth for Web and Mobile
+  // ENHANCED Google OAuth
   static Future<bool> signInWithGoogle() async {
     try {
-      print('Starting Google OAuth...');
+      print('🔍 Initiating Google OAuth...');
 
       // Use the correct redirect URL based on platform
       String redirectTo;
@@ -136,9 +150,9 @@ class SupabaseService {
         redirectTo = SupabaseConfig.mobileredirectUrl;
       }
 
-      print('Using redirect URL: $redirectTo');
+      print('🔗 Using redirect URL: $redirectTo');
 
-      final response = await _client.auth.signInWithOAuth(
+      final response = await client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectTo,
         authScreenLaunchMode: kIsWeb
@@ -146,18 +160,18 @@ class SupabaseService {
             : LaunchMode.externalApplication,
       );
 
-      print('Google OAuth initiated successfully');
+      print('✅ Google OAuth request sent successfully');
       return true;
     } catch (e) {
-      print('Google OAuth error: $e');
+      print('❌ Google OAuth error: $e');
       return false;
     }
   }
 
-  // FIXED GitHub OAuth for Web and Mobile
+  // ENHANCED GitHub OAuth
   static Future<bool> signInWithGitHub() async {
     try {
-      print('Starting GitHub OAuth...');
+      print('🐙 Initiating GitHub OAuth...');
 
       // Use the correct redirect URL based on platform
       String redirectTo;
@@ -167,9 +181,9 @@ class SupabaseService {
         redirectTo = SupabaseConfig.mobileredirectUrl;
       }
 
-      print('Using redirect URL: $redirectTo');
+      print('🔗 Using redirect URL: $redirectTo');
 
-      final response = await _client.auth.signInWithOAuth(
+      final response = await client.auth.signInWithOAuth(
         OAuthProvider.github,
         redirectTo: redirectTo,
         authScreenLaunchMode: kIsWeb
@@ -177,10 +191,10 @@ class SupabaseService {
             : LaunchMode.externalApplication,
       );
 
-      print('GitHub OAuth initiated successfully');
+      print('✅ GitHub OAuth request sent successfully');
       return true;
     } catch (e) {
-      print('GitHub OAuth error: $e');
+      print('❌ GitHub OAuth error: $e');
       return false;
     }
   }
@@ -191,19 +205,37 @@ class SupabaseService {
       try {
         // Get the current URL
         final currentUrl = Uri.base.toString();
-        print('Handling OAuth callback for URL: $currentUrl');
+        print('🔗 Handling OAuth callback for URL: $currentUrl');
 
         // Check if we have auth tokens in the URL
         if (currentUrl.contains('access_token') || currentUrl.contains('code')) {
           // Let Supabase handle the session automatically
           // The auth state listener will pick up the session change
-          print('OAuth tokens detected in URL, letting Supabase handle session');
+          print('✅ OAuth tokens detected in URL, letting Supabase handle session');
         } else {
-          print('No OAuth tokens found in URL');
+          print('⚠️ No OAuth tokens found in URL');
         }
       } catch (e) {
-        print('Error handling OAuth callback: $e');
+        print('❌ Error handling OAuth callback: $e');
       }
+    }
+  }
+
+  // Password reset
+  static Future<bool> resetPassword(String email) async {
+    try {
+      print('🔄 Sending password reset email to: $email');
+      await client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb
+            ? SupabaseConfig.webRedirectUrl
+            : SupabaseConfig.mobileredirectUrl,
+      );
+      print('✅ Password reset email sent successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error sending password reset email: $e');
+      return false;
     }
   }
 }

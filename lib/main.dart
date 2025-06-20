@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -52,6 +53,7 @@ class ProjecTreeApp extends ConsumerStatefulWidget {
 
 class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
   late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
@@ -65,7 +67,7 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
       _appLinks = AppLinks();
 
       // Handle app links when app is already running
-      _appLinks.uriLinkStream.listen((Uri uri) {
+      _linkSubscription = _appLinks.uriLinkStream.listen((Uri uri) {
         print('🔗 Received app link: $uri');
         _handleIncomingLink(uri);
       }, onError: (err) {
@@ -83,10 +85,13 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
 
       if (event == AuthChangeEvent.signedIn && session != null) {
         print('✅ User signed in successfully: ${session.user.email}');
-        // Reset OAuth handling state
+        // Reset OAuth handling state and navigate
         Future.microtask(() {
           if (mounted) {
             ref.read(oauthHandlingProvider.notifier).state = false;
+            // Force navigation to home after successful login
+            final router = ref.read(routerProvider);
+            router.go('/home');
           }
         });
       } else if (event == AuthChangeEvent.signedOut) {
@@ -144,6 +149,13 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
             // Exchange code for session
             await Supabase.instance.client.auth.exchangeCodeForSession(code);
             print('✅ Successfully exchanged code for session');
+
+            // Wait a moment for auth state to update, then navigate
+            await Future.delayed(const Duration(milliseconds: 500));
+            if (mounted) {
+              final router = ref.read(routerProvider);
+              router.go('/home');
+            }
           } catch (e) {
             print('❌ Failed to exchange code for session: $e');
 
@@ -252,7 +264,7 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
 
   @override
   void dispose() {
-    // Clean up app links subscription if needed
+    _linkSubscription?.cancel();
     super.dispose();
   }
 }

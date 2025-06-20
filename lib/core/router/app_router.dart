@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,34 +13,40 @@ import '../../features/projects/screens/project_detail_screen.dart';
 import '../../features/events/screens/event_detail_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authProvider);
+  final authNotifier = ref.read(authProvider.notifier);
 
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: GoRouterRefreshStream(
+      SupabaseService.authStateChanges.map((data) => data.session),
+    ),
     redirect: (context, state) {
-      final isLoggedIn = authState.user != null;
-      final isLoggingIn = state.matchedLocation == '/login' ||
-          state.matchedLocation == '/register';
-      final isAuthCallback = state.matchedLocation == '/auth/callback';
+      // Get current Supabase session directly for most up-to-date info
+      final session = Supabase.instance.client.auth.currentSession;
+      final isLoggedIn = session?.user != null;
+      final currentLocation = state.matchedLocation;
 
-      print('Router redirect - isLoggedIn: $isLoggedIn, location: ${state.matchedLocation}');
+      print('Router redirect - isLoggedIn: $isLoggedIn, location: $currentLocation');
 
       // Allow auth callback to proceed
-      if (isAuthCallback) return null;
+      if (currentLocation == '/auth/callback') return null;
 
-      // DEMO MODE: Allow access to home even without real auth
-      if (state.matchedLocation == '/home') return null;
+      // If already on login and not logged in, stay there
+      if (currentLocation == '/login' && !isLoggedIn) return null;
 
-      // If not logged in and not on auth pages, go to login
-      if (!isLoggedIn && !isLoggingIn && state.matchedLocation != '/home') {
-        print('Redirecting to login');
-        return '/login';
-      }
+      // If already on register and not logged in, stay there
+      if (currentLocation == '/register' && !isLoggedIn) return null;
 
       // If logged in and on auth pages, go to home
-      if (isLoggedIn && isLoggingIn) {
-        print('Redirecting to home');
+      if (isLoggedIn && (currentLocation == '/login' || currentLocation == '/register')) {
+        print('User is logged in, redirecting to home');
         return '/home';
+      }
+
+      // If not logged in and not on auth pages, go to login
+      if (!isLoggedIn && currentLocation != '/login' && currentLocation != '/register') {
+        print('User not logged in, redirecting to login');
+        return '/login';
       }
 
       return null;
@@ -58,7 +65,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/home',
-        builder: (context, state) => const MainScreen(),
+        builder: (context, state) {
+          print('Building home screen');
+          return const MainScreen();
+        },
       ),
       GoRoute(
         path: '/profile/:id',
@@ -86,6 +96,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+// Helper class to refresh router on auth state changes
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen(
+          (dynamic _) => notifyListeners(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 // OAuth callback screen for web
 class AuthCallbackScreen extends ConsumerStatefulWidget {

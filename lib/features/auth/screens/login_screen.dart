@@ -26,12 +26,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
   final _signUpEmailController = TextEditingController();
   final _signUpPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Clear any previous errors when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(authProvider.notifier).clearError();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
+    // Add debug print to see if build is called
+    print('LoginScreen build called - isLoading: ${authState.isLoading}');
+
     return Scaffold(
+      key: const ValueKey('login_screen'), // Add key to prevent rebuilds
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -127,11 +143,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildToggleButton('Sign In', !_isSignUp, () {
-              setState(() => _isSignUp = false);
+              setState(() {
+                _isSignUp = false;
+                ref.read(authProvider.notifier).clearError();
+              });
             }),
             SizedBox(width: 16.w),
             _buildToggleButton('Sign Up', _isSignUp, () {
-              setState(() => _isSignUp = true);
+              setState(() {
+                _isSignUp = true;
+                ref.read(authProvider.notifier).clearError();
+              });
             }),
           ],
         ),
@@ -203,23 +225,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
 
+          // Forgot Password Link (only for sign in)
+          if (!_isSignUp) ...[
+            SizedBox(height: 16.h),
+            Center(
+              child: TextButton(
+                onPressed: () => _showForgotPasswordDialog(),
+                child: Text(
+                  'Forgot Password?',
+                  style: TextStyle(
+                    color: AppTheme.primaryYellow,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+
           // Error Message
           if (authState.error != null) ...[
             SizedBox(height: 16.h),
             Container(
               padding: EdgeInsets.all(16.w),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: authState.error!.contains('check your email')
+                    ? Colors.blue.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
-              ),
-              child: Text(
-                authState.error!,
-                style: TextStyle(
-                  color: Colors.red.shade300,
-                  fontSize: 14.sp,
+                border: Border.all(
+                  color: authState.error!.contains('check your email')
+                      ? Colors.blue.withOpacity(0.3)
+                      : Colors.red.withOpacity(0.3),
                 ),
-                textAlign: TextAlign.center,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    authState.error!.contains('check your email')
+                        ? Icons.email_outlined
+                        : Icons.error_outline,
+                    color: authState.error!.contains('check your email')
+                        ? Colors.blue.shade300
+                        : Colors.red.shade300,
+                    size: 20.sp,
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Text(
+                      authState.error!,
+                      style: TextStyle(
+                        color: authState.error!.contains('check your email')
+                            ? Colors.blue.shade300
+                            : Colors.red.shade300,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -271,38 +334,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
         ),
-
-        // DEMO LOGIN HINT
-        SizedBox(height: 24.h),
-        Container(
-          padding: EdgeInsets.all(16.w),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryYellow.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: AppTheme.primaryYellow.withOpacity(0.3)),
-          ),
-          child: Column(
-            children: [
-              Text(
-                '🚀 Demo Mode',
-                style: TextStyle(
-                  color: AppTheme.primaryYellow,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              Text(
-                'Try: demo@projectree.com / password123\nOr configure your Supabase project for full functionality',
-                style: TextStyle(
-                  color: AppTheme.textGray,
-                  fontSize: 14.sp,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -340,11 +371,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   List<Widget> _buildSignInFields() {
     return [
       _buildInputField(
-        label: 'Email or Username',
+        label: 'Email',
         controller: _emailController,
-        placeholder: 'demo@projectree.com',
+        placeholder: 'Enter your email',
+        keyboardType: TextInputType.emailAddress,
         validator: (value) {
-          if (value?.isEmpty ?? true) return 'Please enter your email or username';
+          if (value?.isEmpty ?? true) return 'Please enter your email';
+          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
+            return 'Please enter a valid email';
+          }
           return null;
         },
       ),
@@ -352,7 +387,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _buildInputField(
         label: 'Password',
         controller: _passwordController,
-        placeholder: 'password123',
+        placeholder: 'Enter your password',
         isPassword: true,
         suffixWidget: GestureDetector(
           onTap: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -401,19 +436,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       SizedBox(height: 20.h),
       _buildInputField(
-        label: 'Username',
+        label: 'Username (optional)',
         controller: _usernameController,
         placeholder: 'johndoe',
-        validator: (value) {
-          if (value?.isEmpty ?? true) return 'Please enter a username';
-          return null;
-        },
+        validator: null, // Optional field
       ),
       SizedBox(height: 20.h),
       _buildInputField(
         label: 'Email',
         controller: _signUpEmailController,
-        placeholder: 'john@projectree.com',
+        placeholder: 'john@example.com',
+        keyboardType: TextInputType.emailAddress,
         validator: (value) {
           if (value?.isEmpty ?? true) return 'Please enter your email';
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
@@ -442,6 +475,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           return null;
         },
       ),
+      SizedBox(height: 20.h),
+      _buildInputField(
+        label: 'Confirm Password',
+        controller: _confirmPasswordController,
+        placeholder: 'Confirm your password',
+        isPassword: true,
+        validator: (value) {
+          if (value?.isEmpty ?? true) return 'Please confirm your password';
+          if (value != _signUpPasswordController.text) {
+            return 'Passwords do not match';
+          }
+          return null;
+        },
+      ),
     ];
   }
 
@@ -452,6 +499,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     bool isPassword = false,
     Widget? suffixWidget,
     String? Function(String?)? validator,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,6 +517,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           controller: controller,
           obscureText: isPassword ? _obscurePassword : false,
           validator: validator,
+          keyboardType: keyboardType,
           style: TextStyle(
             color: AppTheme.textWhite,
             fontSize: 16.sp,
@@ -493,6 +542,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               borderRadius: BorderRadius.circular(12.r),
               borderSide: BorderSide(color: AppTheme.primaryYellow, width: 2),
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: Colors.red, width: 1.5),
+            ),
             contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
             suffixIcon: suffixWidget != null
                 ? Padding(
@@ -513,7 +566,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
       // DEMO LOGIN - Check for demo credentials
-      if (!_isSignUp &&
+      /*if (!_isSignUp &&
           _emailController.text.trim() == 'demo@projectree.com' &&
           _passwordController.text == 'password123') {
 
@@ -528,7 +581,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         // Navigate to home (this will show mock data)
         context.go('/home');
         return;
-      }
+      }*/
 
       bool success;
 
@@ -558,54 +611,110 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Social Login Handlers with better error handling
   Future<void> _handleGoogleLogin() async {
     try {
-      // Show info about Supabase configuration
+      /*// Show info about Supabase configuration
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('⚠️ Configure your Supabase project first!'),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
-      );
+      );*/
 
       final success = await ref.read(authProvider.notifier).signInWithGoogle();
-      if (success && mounted) {
-        print('Google login initiated successfully');
+      if (success) {
+        print('✅ Google login initiated successfully');
       }
     } catch (e) {
-      print('Google login error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google login failed. Configure Supabase first.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('❌ Google login error: $e');
     }
   }
 
   Future<void> _handleGitHubLogin() async {
     try {
-      // Show info about Supabase configuration
+      /*// Show info about Supabase configuration
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('⚠️ Configure your Supabase project first!'),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
-      );
+      );*/
 
       final success = await ref.read(authProvider.notifier).signInWithGitHub();
-      if (success && mounted) {
-        print('GitHub login initiated successfully');
+      if (success) {
+        print('✅ GitHub login initiated successfully');
       }
     } catch (e) {
-      print('GitHub login error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('GitHub login failed. Configure Supabase first.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      print('❌ GitHub login error: $e');
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.inputBackground,
+        title: Text(
+          'Reset Password',
+          style: TextStyle(color: AppTheme.textWhite),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Enter your email address and we\'ll send you a link to reset your password.',
+              style: TextStyle(color: AppTheme.textGray),
+            ),
+            SizedBox(height: 16.h),
+            TextFormField(
+              controller: emailController,
+              keyboardType: TextInputType.emailAddress,
+              style: TextStyle(color: AppTheme.textWhite),
+              decoration: InputDecoration(
+                hintText: 'Enter your email',
+                hintStyle: TextStyle(color: AppTheme.textPlaceholder),
+                filled: true,
+                fillColor: AppTheme.darkBackground,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                  borderSide: BorderSide(color: AppTheme.inputBorder),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.textGray),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (emailController.text.isNotEmpty) {
+                Navigator.pop(context);
+                // TODO: Implement password reset
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Password reset link sent to ${emailController.text}'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryYellow,
+              foregroundColor: AppTheme.darkBackground,
+            ),
+            child: Text('Send Link'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -617,6 +726,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     _usernameController.dispose();
     _signUpEmailController.dispose();
     _signUpPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 }

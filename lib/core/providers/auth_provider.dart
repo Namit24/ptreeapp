@@ -36,22 +36,24 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void _init() {
-    // Listen to auth state changes
+    // Listen to auth state changes with debouncing
     SupabaseService.authStateChanges.listen((data) {
       print('Auth state changed: ${data.event}');
       final user = data.session?.user;
-      if (user != null) {
+
+      // Only update state if there's an actual change
+      if (user != null && state.user?.id != user.id) {
         print('User authenticated: ${user.email}');
         _loadUserProfile(user);
-      } else {
+      } else if (user == null && state.user != null) {
         print('User signed out');
         state = AuthState();
       }
     });
 
-    // Check current session
+    // Check current session only once
     final currentUser = SupabaseService.currentUser;
-    if (currentUser != null) {
+    if (currentUser != null && state.user == null) {
       print('Current user found: ${currentUser.email}');
       _loadUserProfile(currentUser);
     }
@@ -68,17 +70,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // Email/Password Sign In
+  // ENHANCED Email/Password Sign In
   Future<bool> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('🔐 Attempting email/password sign in for: $email');
+
       final response = await SupabaseService.signIn(
         email: email,
         password: password,
       );
 
       if (response.user != null) {
+        print('✅ Email/password sign in successful');
         await _loadUserProfile(response.user!);
         state = state.copyWith(isLoading: false);
         return true;
@@ -86,19 +91,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       state = state.copyWith(
         isLoading: false,
-        error: 'Login failed',
+        error: 'Login failed - Invalid credentials',
+      );
+      return false;
+    } on AuthException catch (e) {
+      print('❌ Auth error: ${e.message}');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.message,
       );
       return false;
     } catch (e) {
+      print('❌ Unexpected error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: 'An unexpected error occurred',
       );
       return false;
     }
   }
 
-  // Email/Password Sign Up
+  // ENHANCED Email/Password Sign Up
   Future<bool> signUp({
     required String email,
     required String password,
@@ -109,6 +122,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('📝 Attempting email/password sign up for: $email');
+
       final response = await SupabaseService.signUp(
         email: email,
         password: password,
@@ -118,6 +133,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (response.user != null) {
+        print('✅ Email/password sign up successful');
+
+        // Check if email confirmation is required
+        if (response.session == null) {
+          state = state.copyWith(
+            isLoading: false,
+            error: 'Please check your email and click the confirmation link to complete registration.',
+          );
+          return false;
+        }
+
+        await _loadUserProfile(response.user!);
         state = state.copyWith(isLoading: false);
         return true;
       }
@@ -127,68 +154,87 @@ class AuthNotifier extends StateNotifier<AuthState> {
         error: 'Registration failed',
       );
       return false;
-    } catch (e) {
+    } on AuthException catch (e) {
+      print('❌ Auth error: ${e.message}');
+      String errorMessage = e.message;
+
+      // Provide user-friendly error messages
+      if (e.message.contains('already registered')) {
+        errorMessage = 'An account with this email already exists. Please sign in instead.';
+      } else if (e.message.contains('password')) {
+        errorMessage = 'Password must be at least 6 characters long.';
+      } else if (e.message.contains('email')) {
+        errorMessage = 'Please enter a valid email address.';
+      }
+
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: errorMessage,
+      );
+      return false;
+    } catch (e) {
+      print('❌ Unexpected error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred during registration',
       );
       return false;
     }
   }
 
-  // Google Sign In - ACTUALLY WORKS
+  // ENHANCED Google Sign In
   Future<bool> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      print('Starting Google sign in...');
+      print('🔍 Starting Google sign in...');
       final success = await SupabaseService.signInWithGoogle();
 
       if (success) {
-        print('Google OAuth initiated successfully');
+        print('✅ Google OAuth initiated successfully');
         // Don't set loading to false here - let the auth state listener handle it
         return true;
       }
 
       state = state.copyWith(
         isLoading: false,
-        error: 'Google sign in failed',
+        error: 'Google sign in failed to start',
       );
       return false;
     } catch (e) {
-      print('Google sign in error: $e');
+      print('❌ Google sign in error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: 'Google sign in failed: ${e.toString()}',
       );
       return false;
     }
   }
 
-  // GitHub Sign In - ACTUALLY WORKS
+  // ENHANCED GitHub Sign In
   Future<bool> signInWithGitHub() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      print('Starting GitHub sign in...');
+      print('🐙 Starting GitHub sign in...');
       final success = await SupabaseService.signInWithGitHub();
 
       if (success) {
-        print('GitHub OAuth initiated successfully');
+        print('✅ GitHub OAuth initiated successfully');
         // Don't set loading to false here - let the auth state listener handle it
         return true;
       }
 
       state = state.copyWith(
         isLoading: false,
-        error: 'GitHub sign in failed',
+        error: 'GitHub sign in failed to start',
       );
       return false;
     } catch (e) {
-      print('GitHub sign in error: $e');
+      print('❌ GitHub sign in error: $e');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: 'GitHub sign in failed: ${e.toString()}',
       );
       return false;
     }
@@ -196,11 +242,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // Sign Out
   Future<void> signOut() async {
-    await SupabaseService.signOut();
-    state = AuthState();
+    try {
+      print('👋 Signing out user...');
+      await SupabaseService.signOut();
+      state = AuthState();
+      print('✅ User signed out successfully');
+    } catch (e) {
+      print('❌ Error signing out: $e');
+    }
   }
 
-  // Backward compatibility
+  // Clear error
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
+  // Backward compatibility methods
   Future<bool> login(String email, String password) => signIn(email, password);
   Future<bool> register(Map<String, dynamic> userData) => signUp(
     email: userData['email'],
