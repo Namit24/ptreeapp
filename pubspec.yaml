@@ -9,10 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # State Management
   flutter_riverpod: ^2.4.9
-  
+
   # Supabase
   supabase_flutter: ^2.3.4
 
@@ -52,8 +52,11 @@ dependencies:
   # Deep linking for OAuth
   app_links: ^3.4.5
 
-  # URL strategy for web (ADDED)
+  # URL strategy for web
   url_strategy: ^0.2.0
+
+  # AI Integration - Google Generative AI
+  google_generative_ai: ^0.2.2
 
 dev_dependencies:
   flutter_test:

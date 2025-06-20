@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
@@ -77,6 +78,54 @@ class SupabaseService {
         .from('profiles')
         .update(data)
         .eq('id', userId);
+  }
+
+  // ENHANCED: Profile image upload
+  static Future<String> uploadProfileImage({
+    required String userId,
+    required File imageFile,
+  }) async {
+    try {
+      print('📸 Uploading profile image for user: $userId');
+
+      final fileName = 'profile_$userId.jpg';
+      final filePath = 'profiles/$fileName';
+
+      // Upload to Supabase Storage
+      await client.storage
+          .from('avatars')
+          .upload(filePath, imageFile, fileOptions: const FileOptions(
+        cacheControl: '3600',
+        upsert: true,
+      ));
+
+      // Get public URL
+      final publicUrl = client.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      print('✅ Profile image uploaded successfully: $publicUrl');
+      return publicUrl;
+    } catch (e) {
+      print('❌ Error uploading profile image: $e');
+      throw Exception('Failed to upload profile image: $e');
+    }
+  }
+
+  // Check username availability
+  static Future<bool> isUsernameAvailable(String username) async {
+    try {
+      final response = await client
+          .from('profiles')
+          .select('username')
+          .eq('username', username)
+          .maybeSingle();
+
+      return response == null;
+    } catch (e) {
+      print('❌ Error checking username availability: $e');
+      return false;
+    }
   }
 
   // Projects methods

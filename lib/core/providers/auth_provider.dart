@@ -28,6 +28,16 @@ class AuthState {
       error: error,
     );
   }
+
+  // Check if profile is complete
+  bool get isProfileComplete {
+    return profile?['profile_completed'] == true;
+  }
+
+  // Check if user needs profile setup
+  bool get needsProfileSetup {
+    return user != null && !isProfileComplete;
+  }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -44,7 +54,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Only update state if there's an actual change
       if (user != null && state.user?.id != user.id) {
         print('User authenticated: ${user.email}');
-        _loadUserProfile(user);
+        loadUserProfile(user);
       } else if (user == null && state.user != null) {
         print('User signed out');
         state = AuthState();
@@ -55,11 +65,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     final currentUser = SupabaseService.currentUser;
     if (currentUser != null && state.user == null) {
       print('Current user found: ${currentUser.email}');
-      _loadUserProfile(currentUser);
+      loadUserProfile(currentUser);
     }
   }
 
-  Future<void> _loadUserProfile(User user) async {
+  Future<void> loadUserProfile(User user) async {
     try {
       final profile = await SupabaseService.getProfile(user.id);
       print('Profile loaded: $profile');
@@ -67,6 +77,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       print('Error loading profile: $e');
       state = state.copyWith(user: user);
+    }
+  }
+
+  // Add method to refresh profile after completion
+  Future<void> refreshProfile() async {
+    if (state.user != null) {
+      await loadUserProfile(state.user!);
     }
   }
 
@@ -84,7 +101,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (response.user != null) {
         print('✅ Email/password sign in successful');
-        await _loadUserProfile(response.user!);
+        await loadUserProfile(response.user!);
         state = state.copyWith(isLoading: false);
         return true;
       }
@@ -144,7 +161,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           return false;
         }
 
-        await _loadUserProfile(response.user!);
+        await loadUserProfile(response.user!);
         state = state.copyWith(isLoading: false);
         return true;
       }

@@ -11,6 +11,7 @@ import '../../features/home/screens/main_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/projects/screens/project_detail_screen.dart';
 import '../../features/events/screens/event_detail_screen.dart';
+import '../../features/profile/screens/profile_setup_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authNotifier = ref.read(authProvider.notifier);
@@ -37,10 +38,40 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If already on register and not logged in, stay there
       if (currentLocation == '/register' && !isLoggedIn) return null;
 
-      // If logged in and on auth pages, go to home
-      if (isLoggedIn && (currentLocation == '/login' || currentLocation == '/register')) {
-        print('User is logged in, redirecting to home');
-        return '/home';
+      // If already on profile setup, stay there
+      if (currentLocation == '/profile-setup') return null;
+
+      // If logged in, check profile completion
+      if (isLoggedIn) {
+        // Get profile from auth provider using read instead of watch
+        final authState = ref.read(authProvider);
+        final profile = authState.profile;
+        final isProfileComplete = profile?['profile_completed'] == true;
+
+        print('Profile completion check - isComplete: $isProfileComplete, profile: ${profile?['profile_completed']}');
+
+        // If on auth pages and logged in
+        if (currentLocation == '/login' || currentLocation == '/register') {
+          if (!isProfileComplete) {
+            print('User logged in but profile incomplete, redirecting to profile setup');
+            return '/profile-setup';
+          } else {
+            print('User logged in with complete profile, redirecting to home');
+            return '/home';
+          }
+        }
+
+        // If trying to access home but profile incomplete
+        if (currentLocation == '/home' && !isProfileComplete) {
+          print('Profile incomplete, redirecting to profile setup');
+          return '/profile-setup';
+        }
+
+        // If trying to access profile setup but profile is complete
+        if (currentLocation == '/profile-setup' && isProfileComplete) {
+          print('Profile already complete, redirecting to home');
+          return '/home';
+        }
       }
 
       // If not logged in and not on auth pages, go to login
@@ -62,6 +93,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetupScreen(),
       ),
       GoRoute(
         path: '/home',

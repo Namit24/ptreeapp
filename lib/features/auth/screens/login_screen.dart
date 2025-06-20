@@ -225,23 +225,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
 
-          // Forgot Password Link (only for sign in)
-          if (!_isSignUp) ...[
-            SizedBox(height: 16.h),
-            Center(
-              child: TextButton(
-                onPressed: () => _showForgotPasswordDialog(),
-                child: Text(
-                  'Forgot Password?',
-                  style: TextStyle(
-                    color: AppTheme.primaryYellow,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ),
-          ],
 
           // Error Message
           if (authState.error != null) ...[
@@ -647,74 +630,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } catch (e) {
       print('❌ GitHub login error: $e');
     }
-  }
-
-  void _showForgotPasswordDialog() {
-    final emailController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.inputBackground,
-        title: Text(
-          'Reset Password',
-          style: TextStyle(color: AppTheme.textWhite),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Enter your email address and we\'ll send you a link to reset your password.',
-              style: TextStyle(color: AppTheme.textGray),
-            ),
-            SizedBox(height: 16.h),
-            TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              style: TextStyle(color: AppTheme.textWhite),
-              decoration: InputDecoration(
-                hintText: 'Enter your email',
-                hintStyle: TextStyle(color: AppTheme.textPlaceholder),
-                filled: true,
-                fillColor: AppTheme.darkBackground,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                  borderSide: BorderSide(color: AppTheme.inputBorder),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: AppTheme.textGray),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (emailController.text.isNotEmpty) {
-                Navigator.pop(context);
-                // TODO: Implement password reset
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Password reset link sent to ${emailController.text}'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryYellow,
-              foregroundColor: AppTheme.darkBackground,
-            ),
-            child: Text('Send Link'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
