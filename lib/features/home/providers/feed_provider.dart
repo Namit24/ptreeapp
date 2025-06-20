@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/project_model.dart';
 import '../../../core/models/event_model.dart';
 import '../../../core/models/user_model.dart';
+import '../../../core/services/supabase_service.dart';
 
 class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>> {
   int _currentPage = 1;
@@ -13,27 +14,61 @@ class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>>
 
   Future<void> loadFeed() async {
     try {
-      // Mock data for now
-      await Future.delayed(const Duration(seconds: 1));
-
-      final projects = _getMockProjects();
-      final events = _getMockEvents();
+      // Try to get real data from Supabase first
+      final projectsData = await SupabaseService.getProjects(limit: 10);
+      final eventsData = await SupabaseService.getEvents(limit: 10);
 
       final feedItems = <Map<String, dynamic>>[];
 
-      for (final project in projects) {
-        feedItems.add({'type': 'project', 'data': project, 'timestamp': project.createdAt});
+      // Convert Supabase data to our models
+      for (final projectData in projectsData) {
+        try {
+          final project = Project.fromJson(projectData);
+          feedItems.add({
+            'type': 'project',
+            'data': project,
+            'timestamp': project.createdAt
+          });
+        } catch (e) {
+          print('Error parsing project: $e');
+        }
       }
 
-      for (final event in events) {
-        feedItems.add({'type': 'event', 'data': event, 'timestamp': event.createdAt});
+      for (final eventData in eventsData) {
+        try {
+          final event = Event.fromJson(eventData);
+          feedItems.add({
+            'type': 'event',
+            'data': event,
+            'timestamp': event.createdAt
+          });
+        } catch (e) {
+          print('Error parsing event: $e');
+        }
       }
 
+      // If no real data, fall back to mock data
+      if (feedItems.isEmpty) {
+        print('No real data found, using mock data');
+        final projects = _getMockProjects();
+        final events = _getMockEvents();
+
+        for (final project in projects) {
+          feedItems.add({'type': 'project', 'data': project, 'timestamp': project.createdAt});
+        }
+
+        for (final event in events) {
+          feedItems.add({'type': 'event', 'data': event, 'timestamp': event.createdAt});
+        }
+      }
+
+      // Sort by timestamp (newest first)
       feedItems.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
 
       state = AsyncValue.data(feedItems);
       _currentPage = 1;
     } catch (error, stackTrace) {
+      print('Feed loading error: $error');
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -94,8 +129,8 @@ class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>>
       ),
       Project(
         id: '2',
-        title: 'Campus Food Delivery App',
-        description: 'Connecting students with local food vendors. Real-time tracking and group ordering features.',
+        title: 'Campus Food Delivery Platform',
+        description: 'Connecting students with local food vendors. Features real-time tracking, group ordering, and student discounts. Built with React Native and Node.js backend.',
         images: [
           'https://picsum.photos/400/300?random=2',
           'https://picsum.photos/400/300?random=3',
@@ -134,12 +169,12 @@ class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>>
     return [
       Event(
         id: '1',
-        title: 'Tech Talk: Future of AI',
-        description: 'Join us for an exciting discussion about the future of artificial intelligence and its impact on various industries.',
+        title: 'Tech Talk: Future of AI in Education',
+        description: 'Join us for an exciting discussion about how artificial intelligence is revolutionizing education. We\'ll cover the latest trends, tools, and opportunities for students and educators.',
         images: ['https://picsum.photos/400/300?random=4'],
-        tags: ['AI', 'Technology', 'Future'],
+        tags: ['AI', 'Education', 'Tech Talk', 'Future'],
         date: DateTime.now().add(const Duration(days: 7)),
-        location: 'Main Auditorium, Building A',
+        location: 'Main Auditorium, Computer Science Building',
         userId: 'user3',
         user: User(
           id: 'user3',

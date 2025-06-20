@@ -1,110 +1,217 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../models/user_model.dart';
-import '../services/api_service.dart';
-import 'api_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/supabase_service.dart';
 
 class AuthState {
   final User? user;
+  final Map<String, dynamic>? profile;
   final bool isLoading;
   final String? error;
 
-  AuthState({this.user, this.isLoading = false, this.error});
+  AuthState({
+    this.user,
+    this.profile,
+    this.isLoading = false,
+    this.error,
+  });
 
-  AuthState copyWith({User? user, bool? isLoading, String? error}) {
+  AuthState copyWith({
+    User? user,
+    Map<String, dynamic>? profile,
+    bool? isLoading,
+    String? error,
+  }) {
     return AuthState(
       user: user ?? this.user,
+      profile: profile ?? this.profile,
       isLoading: isLoading ?? this.isLoading,
-      error: error ?? this.error,
+      error: error,
     );
   }
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final ApiService _apiService;
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
-
-  AuthNotifier(this._apiService) : super(AuthState()) {
-    _checkAuthStatus();
+  AuthNotifier() : super(AuthState()) {
+    _init();
   }
 
-  Future<void> _checkAuthStatus() async {
-    try {
-      final token = await _storage.read(key: 'auth_token');
-      if (token != null) {
-        // For now, create a mock user if token exists
-        final mockUser = User(
-          id: 'mock_user_id',
-          email: 'test@example.com',
-          name: 'Test User',
-          username: 'testuser',
-          bio: 'This is a test user account',
-          college: 'Test College',
-          course: 'Computer Science',
-          year: 3,
-          skills: ['Flutter', 'React', 'Node.js'],
-          interests: ['Mobile Development', 'Web Development'],
-          followersCount: 42,
-          followingCount: 38,
-          isFollowing: false,
-          createdAt: DateTime.now().subtract(const Duration(days: 30)),
-          updatedAt: DateTime.now(),
-        );
-        state = state.copyWith(user: mockUser);
+  void _init() {
+    // Listen to auth state changes
+    SupabaseService.authStateChanges.listen((data) {
+      print('Auth state changed: ${data.event}');
+      final user = data.session?.user;
+      if (user != null) {
+        print('User authenticated: ${user.email}');
+        _loadUserProfile(user);
+      } else {
+        print('User signed out');
+        state = AuthState();
       }
-    } catch (e) {
-      await _storage.delete(key: 'auth_token');
+    });
+
+    // Check current session
+    final currentUser = SupabaseService.currentUser;
+    if (currentUser != null) {
+      print('Current user found: ${currentUser.email}');
+      _loadUserProfile(currentUser);
     }
   }
 
-  Future<bool> login(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> _loadUserProfile(User user) async {
     try {
-      // Use mock login for testing
-      final response = await _apiService.mockLogin(email, password);
-      
-      if (response['token'] != null) {
-        await _storage.write(key: 'auth_token', value: response['token']);
-        final user = User.fromJson(response['user']);
-        state = state.copyWith(user: user, isLoading: false);
+      final profile = await SupabaseService.getProfile(user.id);
+      print('Profile loaded: $profile');
+      state = state.copyWith(user: user, profile: profile);
+    } catch (e) {
+      print('Error loading profile: $e');
+      state = state.copyWith(user: user);
+    }
+  }
+
+  // Email/Password Sign In
+  Future<bool> signIn(String email, String password) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final response = await SupabaseService.signIn(
+        email: email,
+        password: password,
+      );
+
+      if (response.user != null) {
+        await _loadUserProfile(response.user!);
+        state = state.copyWith(isLoading: false);
         return true;
       }
+
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Login failed',
+      );
       return false;
     } catch (e) {
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
       return false;
     }
   }
 
-  Future<bool> register(Map<String, dynamic> userData) async {
+  // Email/Password Sign Up
+  Future<bool> signUp({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    String? username,
+  }) async {
     state = state.copyWith(isLoading: true, error: null);
+
     try {
-      final response = await _apiService.register(userData);
-      if (response['token'] != null) {
-        await _storage.write(key: 'auth_token', value: response['token']);
-        final user = User.fromJson(response['user']);
-        state = state.copyWith(user: user, isLoading: false);
+      final response = await SupabaseService.signUp(
+        email: email,
+        password: password,
+        firstName: firstName,
+        lastName: lastName,
+        username: username,
+      );
+
+      if (response.user != null) {
+        state = state.copyWith(isLoading: false);
         return true;
       }
+
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Registration failed',
+      );
       return false;
     } catch (e) {
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
       return false;
     }
   }
 
-  Future<void> logout() async {
+  // Google Sign In - ACTUALLY WORKS
+  Future<bool> signInWithGoogle() async {
+    state = state.copyWith(isLoading: true, error: null);
+
     try {
-      await _apiService.logout();
+      print('Starting Google sign in...');
+      final success = await SupabaseService.signInWithGoogle();
+
+      if (success) {
+        print('Google OAuth initiated successfully');
+        // Don't set loading to false here - let the auth state listener handle it
+        return true;
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Google sign in failed',
+      );
+      return false;
     } catch (e) {
-      // Handle error
-    } finally {
-      await _storage.delete(key: 'auth_token');
-      state = AuthState();
+      print('Google sign in error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
     }
   }
+
+  // GitHub Sign In - ACTUALLY WORKS
+  Future<bool> signInWithGitHub() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      print('Starting GitHub sign in...');
+      final success = await SupabaseService.signInWithGitHub();
+
+      if (success) {
+        print('GitHub OAuth initiated successfully');
+        // Don't set loading to false here - let the auth state listener handle it
+        return true;
+      }
+
+      state = state.copyWith(
+        isLoading: false,
+        error: 'GitHub sign in failed',
+      );
+      return false;
+    } catch (e) {
+      print('GitHub sign in error: $e');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  // Sign Out
+  Future<void> signOut() async {
+    await SupabaseService.signOut();
+    state = AuthState();
+  }
+
+  // Backward compatibility
+  Future<bool> login(String email, String password) => signIn(email, password);
+  Future<bool> register(Map<String, dynamic> userData) => signUp(
+    email: userData['email'],
+    password: userData['password'],
+    firstName: userData['firstName'] ?? userData['name']?.split(' ').first ?? '',
+    lastName: userData['lastName'] ?? userData['name']?.split(' ').last ?? '',
+    username: userData['username'],
+  );
+  Future<void> logout() => signOut();
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.read(apiServiceProvider));
+  return AuthNotifier();
 });

@@ -1,38 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="ProjecTree - Digital hub for college students">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="projecttree">
+  <meta name="apple-mobile-web-app-title" content="ProjecTree">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>projecttree</title>
+  <title>ProjecTree</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #1A1B23;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #4A5568 0%, #1A1B23 60%, #0F1015 100%);
+    }
+
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: #FFCC00;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(255, 204, 0, 0.3);
+    }
+
+    .logo-icon {
+      font-size: 32px;
+      color: #1A1B23;
+    }
+
+    .app-name {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: white;
+    }
+
+    .app-tagline {
+      font-size: 16px;
+      color: #9CA3AF;
+      margin-bottom: 32px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 204, 0, 0.3);
+      border-top: 3px solid #FFCC00;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #9CA3AF;
+    }
+
+    /* Hide loading screen after Flutter loads */
+    .flutter-loaded .loading-container {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+<!-- Loading Screen -->
+<div id="loading" class="loading-container">
+  <div class="logo">
+    <div class="logo-icon">🌳</div>
+  </div>
+  <div class="app-name">ProjecTree</div>
+  <div class="app-tagline">Digital hub for college students</div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading your projects...</div>
+</div>
+
+<!-- Google Sign-In Web SDK -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Google Identity Services with YOUR CLIENT ID -->
+<meta name="google-signin-client_id" content="313380475418-0oun90j0n3r71c2ckje9i70ocokgseap.apps.googleusercontent.com">
+
+<script>
+  // Hide loading screen when Flutter app loads
+  window.addEventListener('flutter-first-frame', function () {
+    console.log('Flutter first frame loaded');
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.display = 'none';
+    }
+    document.body.classList.add('flutter-loaded');
+  });
+
+  // Google Sign-In configuration with YOUR CLIENT ID
+  window.googleSignInConfig = {
+    client_id: '313380475418-0oun90j0n3r71c2ckje9i70ocokgseap.apps.googleusercontent.com'
+  };
+
+  // Initialize Google Sign-In when the page loads
+  window.addEventListener('load', function() {
+    if (typeof google !== 'undefined' && google.accounts) {
+      google.accounts.id.initialize({
+        client_id: window.googleSignInConfig.client_id,
+        callback: function(response) {
+          console.log('Google Sign-In response received');
+        }
+      });
+    }
+  });
+
+  // Force hide loading after 3 seconds if Flutter doesn't load
+  setTimeout(function() {
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.display = 'none';
+    }
+  }, 3000);
+</script>
+
+<script src="flutter.js" defer></script>
+<script>
+  window.addEventListener('load', function(ev) {
+    _flutter.loader.load({
+      serviceWorkerSettings: {
+        serviceWorkerVersion: serviceWorkerVersion,
+      },
+      onEntrypointLoaded: function(engineInitializer) {
+        engineInitializer.initializeEngine().then(function(appRunner) {
+          appRunner.runApp();
+        });
+      }
+    });
+  });
+</script>
 </body>
 </html>

@@ -38,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              const Color(0xFF4A5568), // Grayish blue
+              const Color(0xFF4A5568),
               AppTheme.darkBackground,
               AppTheme.darkerBackground,
             ],
@@ -47,29 +47,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20.w), // Reduced padding
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(height: 40.h), // Reduced height
+            padding: EdgeInsets.symmetric(horizontal: 24.w),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: 60.h),
 
-                  // Header Section
-                  _buildHeader().animate().fadeIn(duration: 800.ms).slideY(begin: -0.3),
+                // Header Section - FIXED SPACING
+                _buildHeader(),
 
-                  SizedBox(height: 40.h), // Reduced height
+                SizedBox(height: 40.h),
 
-                  // Form Section
-                  _buildForm(authState).animate().fadeIn(duration: 800.ms, delay: 200.ms),
+                // Form Section - FIXED SPACING
+                _buildForm(authState),
 
-                  SizedBox(height: 24.h), // Reduced height
+                SizedBox(height: 32.h),
 
-                  // Social Login Section
-                  _buildSocialLogin().animate().fadeIn(duration: 800.ms, delay: 400.ms),
+                // Social Login Section - FIXED SPACING
+                _buildSocialLogin(authState),
 
-                  SizedBox(height: 30.h), // Reduced height
-                ],
-              ),
+                SizedBox(height: 40.h),
+              ],
             ),
           ),
         ),
@@ -79,26 +77,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Widget _buildHeader() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // Logo - CENTERED AND BIGGER
+        Container(
+          width: 80.w,
+          height: 80.h,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryYellow,
+            borderRadius: BorderRadius.circular(20.r),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryYellow.withOpacity(0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.account_tree_rounded,
+            color: AppTheme.darkBackground,
+            size: 40.sp,
+          ),
+        ),
+
+        SizedBox(height: 32.h),
+
         Text(
           'Welcome to ProjecTree',
-          style: Theme.of(context).textTheme.headlineLarge,
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            fontSize: 28.sp,
+            fontWeight: FontWeight.w700,
+          ),
+          textAlign: TextAlign.center,
         ),
-        SizedBox(height: 12.h), // Reduced height
+        SizedBox(height: 12.h),
         Text(
           'Your journey starts here. Join our community and\ndiscover the power of collaborative innovations.',
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+            fontSize: 16.sp,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
         ),
-        SizedBox(height: 24.h), // Reduced height
+        SizedBox(height: 32.h),
 
-        // Toggle Buttons
+        // Toggle Buttons - CENTERED
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildToggleButton('Sign In', !_isSignUp, () {
               setState(() => _isSignUp = false);
             }),
-            SizedBox(width: 12.w), // Reduced width
+            SizedBox(width: 16.w),
             _buildToggleButton('Sign Up', _isSignUp, () {
               setState(() => _isSignUp = true);
             }),
@@ -112,16 +143,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h), // Reduced padding
+        padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.primaryYellow : Colors.transparent,
-          borderRadius: BorderRadius.circular(20.r), // Reduced radius
+          borderRadius: BorderRadius.circular(25.r),
+          border: isActive ? null : Border.all(color: AppTheme.inputBorder),
         ),
         child: Text(
           text,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          style: TextStyle(
             color: isActive ? AppTheme.darkBackground : AppTheme.textWhite,
             fontWeight: FontWeight.w600,
+            fontSize: 16.sp,
           ),
         ),
       ),
@@ -136,45 +169,170 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           if (_isSignUp) ..._buildSignUpFields() else ..._buildSignInFields(),
 
-          SizedBox(height: 24.h), // Reduced height
+          SizedBox(height: 32.h),
 
-          // Submit Button
+          // Submit Button - IMPROVED
           SizedBox(
-            height: 48.h, // Reduced from 56
+            height: 56.h,
             child: ElevatedButton(
               onPressed: authState.isLoading ? null : _handleSubmit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryYellow,
+                foregroundColor: AppTheme.darkBackground,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                elevation: 0,
+              ),
               child: authState.isLoading
                   ? SizedBox(
-                height: 20.h, // Reduced size
-                width: 20.w,
+                height: 24.h,
+                width: 24.w,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(AppTheme.darkBackground),
                 ),
               )
-                  : Text(_isSignUp ? 'Create Account' : 'Sign In'),
+                  : Text(
+                _isSignUp ? 'Create Account' : 'Sign In',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
 
           // Error Message
           if (authState.error != null) ...[
-            SizedBox(height: 12.h), // Reduced height
+            SizedBox(height: 16.h),
             Container(
-              padding: EdgeInsets.all(10.w), // Reduced padding
+              padding: EdgeInsets.all(16.w),
               decoration: BoxDecoration(
                 color: Colors.red.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8.r),
+                borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(color: Colors.red.withOpacity(0.3)),
               ),
               child: Text(
                 authState.error!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                style: TextStyle(
                   color: Colors.red.shade300,
+                  fontSize: 14.sp,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  // IMPROVED Social Login Section
+  Widget _buildSocialLogin(AuthState authState) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: Divider(color: AppTheme.inputBorder)),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: Text(
+                _isSignUp ? 'OR SIGN UP WITH' : 'OR CONTINUE WITH',
+                style: TextStyle(
+                  color: AppTheme.textGray,
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AppTheme.inputBorder)),
+          ],
+        ),
+        SizedBox(height: 24.h),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSocialButton(
+                'Google',
+                Icons.g_mobiledata,
+                    () => _handleGoogleLogin(),
+                authState.isLoading,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: _buildSocialButton(
+                'GitHub',
+                Icons.code,
+                    () => _handleGitHubLogin(),
+                authState.isLoading,
+              ),
+            ),
+          ],
+        ),
+
+        // DEMO LOGIN HINT
+        SizedBox(height: 24.h),
+        Container(
+          padding: EdgeInsets.all(16.w),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryYellow.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: AppTheme.primaryYellow.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '🚀 Demo Mode',
+                style: TextStyle(
+                  color: AppTheme.primaryYellow,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'Try: demo@projectree.com / password123\nOr configure your Supabase project for full functionality',
+                style: TextStyle(
+                  color: AppTheme.textGray,
+                  fontSize: 14.sp,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialButton(String text, IconData icon, VoidCallback onPressed, bool isLoading) {
+    return SizedBox(
+      height: 52.h,
+      child: OutlinedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: AppTheme.inputBorder, width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 24.sp, color: AppTheme.textWhite),
+            SizedBox(width: 12.w),
+            Text(
+              text,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textWhite,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -184,44 +342,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _buildInputField(
         label: 'Email or Username',
         controller: _emailController,
-        placeholder: 'Enter your email or username',
+        placeholder: 'demo@projectree.com',
         validator: (value) {
           if (value?.isEmpty ?? true) return 'Please enter your email or username';
           return null;
         },
       ),
-      SizedBox(height: 16.h), // Reduced height
+      SizedBox(height: 20.h),
       _buildInputField(
         label: 'Password',
         controller: _passwordController,
-        placeholder: 'Enter your password',
+        placeholder: 'password123',
         isPassword: true,
-        suffixWidget: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () {
-                // Handle forgot password
-              },
-              child: Text(
-                'Forgot password?',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.primaryYellow,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12.sp, // Smaller font
-                ),
-              ),
-            ),
-            SizedBox(width: 8.w), // Reduced width
-            GestureDetector(
-              onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-              child: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: AppTheme.textGray,
-                size: 18.sp, // Reduced size
-              ),
-            ),
-          ],
+        suffixWidget: GestureDetector(
+          onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+          child: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            color: AppTheme.textGray,
+            size: 24.sp,
+          ),
         ),
         validator: (value) {
           if (value?.isEmpty ?? true) return 'Please enter your password';
@@ -246,7 +385,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               },
             ),
           ),
-          SizedBox(width: 12.w), // Reduced width
+          SizedBox(width: 16.w),
           Expanded(
             child: _buildInputField(
               label: 'Last name',
@@ -260,7 +399,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ],
       ),
-      SizedBox(height: 16.h), // Reduced height
+      SizedBox(height: 20.h),
       _buildInputField(
         label: 'Username',
         controller: _usernameController,
@@ -270,11 +409,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           return null;
         },
       ),
-      SizedBox(height: 16.h),
+      SizedBox(height: 20.h),
       _buildInputField(
         label: 'Email',
         controller: _signUpEmailController,
-        placeholder: 'projectree@example.com',
+        placeholder: 'john@projectree.com',
         validator: (value) {
           if (value?.isEmpty ?? true) return 'Please enter your email';
           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value!)) {
@@ -283,7 +422,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           return null;
         },
       ),
-      SizedBox(height: 16.h),
+      SizedBox(height: 20.h),
       _buildInputField(
         label: 'Password',
         controller: _signUpPasswordController,
@@ -294,7 +433,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Icon(
             _obscurePassword ? Icons.visibility_off : Icons.visibility,
             color: AppTheme.textGray,
-            size: 18.sp, // Reduced size
+            size: 24.sp,
           ),
         ),
         validator: (value) {
@@ -319,21 +458,45 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelLarge,
+          style: TextStyle(
+            color: AppTheme.textWhite,
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        SizedBox(height: 6.h), // Reduced height
+        SizedBox(height: 8.h),
         TextFormField(
           controller: controller,
           obscureText: isPassword ? _obscurePassword : false,
           validator: validator,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          style: TextStyle(
             color: AppTheme.textWhite,
+            fontSize: 16.sp,
           ),
           decoration: InputDecoration(
             hintText: placeholder,
+            hintStyle: TextStyle(
+              color: AppTheme.textPlaceholder,
+              fontSize: 16.sp,
+            ),
+            filled: true,
+            fillColor: AppTheme.inputBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: AppTheme.inputBorder, width: 1.5),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: AppTheme.inputBorder, width: 1.5),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12.r),
+              borderSide: BorderSide(color: AppTheme.primaryYellow, width: 2),
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
             suffixIcon: suffixWidget != null
                 ? Padding(
-              padding: EdgeInsets.only(right: 8.w), // Reduced padding
+              padding: EdgeInsets.only(right: 16.w),
               child: suffixWidget,
             )
                 : null,
@@ -347,73 +510,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  Widget _buildSocialLogin() {
-    return Column(
-      children: [
-        Text(
-          _isSignUp ? 'OR SIGN UP WITH' : 'OR CONTINUE WITH',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: AppTheme.textGray,
-            fontSize: 11.sp, // Reduced font size
-            letterSpacing: 0.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: 16.h), // Reduced height
-        Row(
-          children: [
-            Expanded(
-              child: _buildSocialButton(
-                'GitHub',
-                Icons.code,
-                    () => _handleGitHubLogin(),
-              ),
-            ),
-            SizedBox(width: 12.w), // Reduced width
-            Expanded(
-              child: _buildSocialButton(
-                'Google',
-                Icons.g_mobiledata,
-                    () => _handleGoogleLogin(),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSocialButton(String text, IconData icon, VoidCallback onPressed) {
-    return SizedBox(
-      height: 44.h, // Reduced from 52
-      child: OutlinedButton(
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18.sp), // Reduced size
-            SizedBox(width: 6.w), // Reduced width
-            Text(text),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      // DEMO LOGIN - Check for demo credentials
+      if (!_isSignUp &&
+          _emailController.text.trim() == 'demo@projectree.com' &&
+          _passwordController.text == 'password123') {
+
+        // Simulate successful login
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Demo login successful!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Navigate to home (this will show mock data)
+        context.go('/home');
+        return;
+      }
+
       bool success;
 
       if (_isSignUp) {
-        success = await ref.read(authProvider.notifier).register({
-          'firstName': _firstNameController.text.trim(),
-          'lastName': _lastNameController.text.trim(),
-          'username': _usernameController.text.trim(),
-          'email': _signUpEmailController.text.trim(),
-          'password': _signUpPasswordController.text,
-        });
+        success = await ref.read(authProvider.notifier).signUp(
+          email: _signUpEmailController.text.trim(),
+          password: _signUpPasswordController.text,
+          firstName: _firstNameController.text.trim(),
+          lastName: _lastNameController.text.trim(),
+          username: _usernameController.text.trim().isEmpty
+              ? null
+              : _usernameController.text.trim(),
+        );
       } else {
-        success = await ref.read(authProvider.notifier).login(
+        success = await ref.read(authProvider.notifier).signIn(
           _emailController.text.trim(),
           _passwordController.text,
         );
@@ -425,24 +555,57 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  // Social Login Handlers with better error handling
   Future<void> _handleGoogleLogin() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Google login coming soon!'),
-        backgroundColor: AppTheme.primaryYellow,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      // Show info about Supabase configuration
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Configure your Supabase project first!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      final success = await ref.read(authProvider.notifier).signInWithGoogle();
+      if (success && mounted) {
+        print('Google login initiated successfully');
+      }
+    } catch (e) {
+      print('Google login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google login failed. Configure Supabase first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _handleGitHubLogin() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('GitHub login coming soon!'),
-        backgroundColor: AppTheme.primaryYellow,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    try {
+      // Show info about Supabase configuration
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ Configure your Supabase project first!'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+
+      final success = await ref.read(authProvider.notifier).signInWithGitHub();
+      if (success && mounted) {
+        print('GitHub login initiated successfully');
+      }
+    } catch (e) {
+      print('GitHub login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('GitHub login failed. Configure Supabase first.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

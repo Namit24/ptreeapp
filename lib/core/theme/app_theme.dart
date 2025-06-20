@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // ProjecTree Color Palette from screenshots
+  // ProjecTree Color Palette
   static const Color primaryYellow = Color(0xFFFFCC00);
   static const Color darkBackground = Color(0xFF1A1B23);
   static const Color darkerBackground = Color(0xFF0F1015);
@@ -13,7 +13,7 @@ class AppTheme {
   static const Color textGray = Color(0xFF9CA3AF);
   static const Color textPlaceholder = Color(0xFF6B7280);
 
-  // Additional colors needed by other components
+  // Additional colors
   static const Color primaryBlack = Color(0xFF000000);
   static const Color primaryWhite = Color(0xFFFFFFFF);
   static const Color neutralGray = Color(0xFF6B7280);
@@ -38,49 +38,42 @@ class AppTheme {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: darkBackground,
 
-    // Typography - Much smaller sizes
+    // OPTIMIZED Typography - Better sizes for mobile
     textTheme: TextTheme(
-      // Main heading
       headlineLarge: GoogleFonts.inter(
-        fontSize: 28.sp, // Reduced from 32
+        fontSize: 24.sp,
         fontWeight: FontWeight.w700,
         color: textWhite,
-        letterSpacing: -0.5,
+        letterSpacing: -0.3,
       ),
-      // Subtitle
       headlineMedium: GoogleFonts.inter(
-        fontSize: 14.sp, // Reduced from 16
+        fontSize: 16.sp,
         fontWeight: FontWeight.w400,
         color: textGray,
-        height: 1.5,
+        height: 1.3,
       ),
-      // Form labels
       labelLarge: GoogleFonts.inter(
-        fontSize: 13.sp, // Reduced from 14
+        fontSize: 14.sp,
         fontWeight: FontWeight.w500,
         color: textWhite,
       ),
-      // Button text
       labelMedium: GoogleFonts.inter(
-        fontSize: 14.sp, // Reduced from 16
+        fontSize: 14.sp,
         fontWeight: FontWeight.w600,
         color: darkBackground,
       ),
-      // Body text
       bodyMedium: GoogleFonts.inter(
-        fontSize: 13.sp, // Reduced from 14
+        fontSize: 14.sp,
         fontWeight: FontWeight.w400,
         color: textGray,
       ),
-      // Small text
       bodySmall: GoogleFonts.inter(
-        fontSize: 11.sp, // Reduced from 12
+        fontSize: 12.sp,
         fontWeight: FontWeight.w400,
         color: neutralGray,
       ),
-      // Headlines
       headlineSmall: GoogleFonts.inter(
-        fontSize: 18.sp, // Reduced from 20
+        fontSize: 18.sp,
         fontWeight: FontWeight.w600,
         color: textWhite,
       ),
@@ -97,7 +90,7 @@ class AppTheme {
       onBackground: textWhite,
     ),
 
-    // Input field theme
+    // OPTIMIZED Input field theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: inputBackground,
@@ -111,27 +104,27 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8.r),
-        borderSide: BorderSide(color: primaryYellow, width: 2),
+        borderSide: BorderSide(color: primaryYellow, width: 1.5),
       ),
-      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 12.h), // Reduced padding
+      contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       hintStyle: GoogleFonts.inter(
-        fontSize: 13.sp, // Reduced from 14
+        fontSize: 14.sp,
         color: textPlaceholder,
       ),
     ),
 
-    // Button themes
+    // OPTIMIZED Button themes
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryYellow,
         foregroundColor: darkBackground,
         elevation: 0,
-        padding: EdgeInsets.symmetric(vertical: 12.h), // Reduced from 16
+        padding: EdgeInsets.symmetric(vertical: 16.h),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(25.r),
+          borderRadius: BorderRadius.circular(8.r),
         ),
         textStyle: GoogleFonts.inter(
-          fontSize: 14.sp, // Reduced from 16
+          fontSize: 16.sp,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -141,17 +134,17 @@ class AppTheme {
       style: OutlinedButton.styleFrom(
         foregroundColor: textWhite,
         side: BorderSide(color: inputBorder, width: 1),
-        padding: EdgeInsets.symmetric(vertical: 12.h), // Reduced from 16
+        padding: EdgeInsets.symmetric(vertical: 16.h),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8.r),
         ),
         textStyle: GoogleFonts.inter(
-          fontSize: 13.sp, // Reduced from 14
+          fontSize: 14.sp,
           fontWeight: FontWeight.w500,
         ),
       ),
     ),
   );
 
-  static ThemeData lightTheme = darkTheme; // Use dark theme for now
+  static ThemeData lightTheme = darkTheme;
 }

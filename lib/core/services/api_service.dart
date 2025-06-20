@@ -7,9 +7,9 @@ class ApiService {
   final Dio _dio;
 
   ApiService(this._dio) {
-    // Set base URL to your ProjecTree backend
-    _dio.options.baseUrl = 'https://your-projectree-domain.vercel.app/api';
-    
+    // Remove the backend URL since we're using Supabase directly
+    // _dio.options.baseUrl = 'https://your-projectree-domain.vercel.app/api';
+
     // Add request/response interceptors for debugging
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
@@ -18,51 +18,14 @@ class ApiService {
     ));
   }
 
-  // Auth endpoints
-  Future<Map<String, dynamic>> login(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/auth/login', data: data);
-      return response.data;
-    } catch (e) {
-      print('Login error: $e');
-      throw _handleError(e);
-    }
-  }
+  // Remove all backend API calls since we're using Supabase directly
+  // The auth, projects, and events are now handled by SupabaseService
 
-  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/auth/register', data: data);
-      return response.data;
-    } catch (e) {
-      print('Register error: $e');
-      throw _handleError(e);
-    }
-  }
-
-  Future<void> logout() async {
-    try {
-      await _dio.post('/auth/logout');
-    } catch (e) {
-      print('Logout error: $e');
-      // Don't throw error for logout, just log it
-    }
-  }
-
-  Future<User> getCurrentUser() async {
-    try {
-      final response = await _dio.get('/auth/me');
-      return User.fromJson(response.data);
-    } catch (e) {
-      print('Get current user error: $e');
-      throw _handleError(e);
-    }
-  }
-
-  // For testing purposes, let's add a mock login method
+  // For testing purposes, let's add a mock login method (not used anymore)
   Future<Map<String, dynamic>> mockLogin(String email, String password) async {
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 2));
-    
+
     // Mock successful login
     if (email.isNotEmpty && password.isNotEmpty) {
       return {
@@ -99,72 +62,7 @@ class ApiService {
     }
   }
 
-  // User endpoints
-  Future<User> getUser(String id) async {
-    try {
-      final response = await _dio.get('/users/$id');
-      return User.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<User> updateProfile(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/users/profile', data: data);
-      return User.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<void> followUser(String id) async {
-    try {
-      await _dio.post('/users/$id/follow');
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<void> unfollowUser(String id) async {
-    try {
-      await _dio.delete('/users/$id/follow');
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<List<User>> getSuggestedUsers() async {
-    try {
-      final response = await _dio.get('/users/suggested');
-      return (response.data as List).map((json) => User.fromJson(json)).toList();
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // Project endpoints with mock data for testing
-  Future<List<Project>> getProjects(int page) async {
-    try {
-      // For now, return mock data
-      await Future.delayed(const Duration(seconds: 1));
-      return _getMockProjects();
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<List<Event>> getEvents(int page) async {
-    try {
-      // For now, return mock data
-      await Future.delayed(const Duration(seconds: 1));
-      return _getMockEvents();
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  // Mock data methods
+  // Mock data methods for testing (these return the same data as before)
   List<Project> _getMockProjects() {
     return [
       Project(
@@ -287,86 +185,5 @@ class ApiService {
       return 'Network error: Please check your connection';
     }
     return 'An unexpected error occurred';
-  }
-
-  // Rest of the methods remain the same...
-  Future<Project> getProject(String id) async {
-    try {
-      final response = await _dio.get('/projects/$id');
-      return Project.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Project> createProject(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/projects', data: data);
-      return Project.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Project> updateProject(String id, Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.put('/projects/$id', data: data);
-      return Project.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<void> deleteProject(String id) async {
-    try {
-      await _dio.delete('/projects/$id');
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<void> likeProject(String id) async {
-    try {
-      await _dio.post('/projects/$id/like');
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Event> getEvent(String id) async {
-    try {
-      final response = await _dio.get('/events/$id');
-      return Event.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Event> createEvent(Map<String, dynamic> data) async {
-    try {
-      final response = await _dio.post('/events', data: data);
-      return Event.fromJson(response.data);
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Map<String, dynamic>> search(String query) async {
-    try {
-      final response = await _dio.get('/search', queryParameters: {'q': query});
-      return response.data;
-    } catch (e) {
-      throw _handleError(e);
-    }
-  }
-
-  Future<Map<String, dynamic>> uploadImage(MultipartFile file) async {
-    try {
-      final formData = FormData.fromMap({'file': file});
-      final response = await _dio.post('/upload', data: formData);
-      return response.data;
-    } catch (e) {
-      throw _handleError(e);
-    }
   }
 }
