@@ -49,7 +49,7 @@ class SupabaseService {
   static User? get currentUser => client.auth.currentUser;
   static Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
 
-  // FIXED: Profile methods with proper email handling
+  // ENHANCED: Profile methods with proper email handling
   static Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
       print('👤 Loading profile for: $userId');
@@ -167,6 +167,10 @@ class SupabaseService {
         'following_id': followingId,
       });
 
+      // Update counts for both users
+      await updateFollowCounts(followingId); // Update followed user's follower count
+      await updateFollowCounts(currentUser.id); // Update current user's following count
+
       print('✅ Successfully followed user');
       return true;
     } catch (e) {
@@ -187,6 +191,10 @@ class SupabaseService {
           .delete()
           .eq('follower_id', currentUser.id)
           .eq('following_id', followingId);
+
+      // Update counts for both users
+      await updateFollowCounts(followingId); // Update unfollowed user's follower count
+      await updateFollowCounts(currentUser.id); // Update current user's following count
 
       print('✅ Successfully unfollowed user');
       return true;
@@ -280,6 +288,30 @@ class SupabaseService {
     } catch (e) {
       print('❌ Error getting users: $e');
       return [];
+    }
+  }
+
+  // NEW: Search users functionality
+  static Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      print('🔍 Searching users with query: $query');
+
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) return [];
+
+      final response = await client
+          .from('profiles')
+          .select()
+          .neq('id', currentUser.id) // Exclude current user
+          .eq('profile_completed', true) // Only completed profiles
+          .or('full_name.ilike.%$query%,username.ilike.%$query%,first_name.ilike.%$query%,last_name.ilike.%$query%')
+          .order('created_at', ascending: false);
+
+      print('✅ Search completed, found ${response.length} users');
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error searching users: $e');
+      throw Exception('Failed to search users: $e');
     }
   }
 
@@ -433,6 +465,43 @@ class SupabaseService {
     } catch (e) {
       print('❌ Error sending password reset: $e');
       return false;
+    }
+  }
+
+  // NEW: Update follower/following counts
+  static Future<void> updateFollowCounts(String userId) async {
+    try {
+      print('📊 Updating follow counts for user: $userId');
+
+      // Get follower count
+      final followersResponse = await client
+          .from('follows')
+          .select('id')
+          .eq('following_id', userId);
+
+      final followerCount = followersResponse.length;
+
+      // Get following count
+      final followingResponse = await client
+          .from('follows')
+          .select('id')
+          .eq('follower_id', userId);
+
+      final followingCount = followingResponse.length;
+
+      // Update profile with new counts
+      await client
+          .from('profiles')
+          .update({
+        'followers_count': followerCount,
+        'following_count': followingCount,
+        'updated_at': DateTime.now().toIso8601String(),
+      })
+          .eq('id', userId);
+
+      print('✅ Updated counts - Followers: $followerCount, Following: $followingCount');
+    } catch (e) {
+      print('❌ Error updating follow counts: $e');
     }
   }
 }

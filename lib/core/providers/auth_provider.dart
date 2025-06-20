@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
 import '../services/supabase_service.dart';
 
 class AuthState {
@@ -125,6 +126,60 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state.user != null) {
       print('🔄 Refreshing profile...');
       await loadUserProfile(state.user!);
+    }
+  }
+
+  // ADDED: Upload profile image method
+  Future<String> uploadProfileImage(File imageFile) async {
+    try {
+      final user = state.user;
+      if (user == null) throw Exception('User not authenticated');
+
+      print('📤 Uploading profile image for user: ${user.id}');
+
+      final fileName = 'profile_${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final filePath = 'profiles/$fileName';
+
+      // Upload to Supabase Storage
+      await Supabase.instance.client.storage
+          .from('avatars')
+          .upload(filePath, imageFile);
+
+      // Get public URL
+      final imageUrl = Supabase.instance.client.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+
+      print('✅ Profile image uploaded successfully: $imageUrl');
+      return imageUrl;
+    } catch (e) {
+      print('❌ Error uploading profile image: $e');
+      throw Exception('Failed to upload image: $e');
+    }
+  }
+
+  // ADDED: Update profile method
+  Future<void> updateProfile(Map<String, dynamic> updates) async {
+    try {
+      final user = state.user;
+      if (user == null) throw Exception('User not authenticated');
+
+      print('📝 Updating profile for user: ${user.id}');
+      print('Updates: $updates');
+
+      // Update profile in database
+      await Supabase.instance.client
+          .from('profiles')
+          .update(updates)
+          .eq('id', user.id);
+
+      // Refresh profile data
+      await refreshProfile();
+
+      print('✅ Profile updated successfully');
+    } catch (e) {
+      print('❌ Error updating profile: $e');
+      throw Exception('Failed to update profile: $e');
     }
   }
 

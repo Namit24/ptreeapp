@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../core/providers/auth_provider.dart';
 
 class FollowState {
   final Map<String, bool> followingStatus;
@@ -34,75 +35,124 @@ class FollowState {
 }
 
 class FollowNotifier extends StateNotifier<FollowState> {
-  FollowNotifier() : super(FollowState());
+  final Ref ref;
+
+  FollowNotifier(this.ref) : super(FollowState());
 
   Future<void> toggleFollow(String userId) async {
+    final currentUser = ref.read(authProvider).user;
+    if (currentUser == null) return;
+
     final currentlyFollowing = state.followingStatus[userId] ?? false;
 
-    // Optimistic update
+    // Set loading state
+    state = state.copyWith(isLoading: true);
+
+    // Optimistic update for BOTH users
     final newFollowingStatus = {...state.followingStatus};
     final newFollowerCounts = {...state.followerCounts};
+    final newFollowingCounts = {...state.followingCounts};
 
     newFollowingStatus[userId] = !currentlyFollowing;
 
     if (currentlyFollowing) {
-      // Unfollowing - decrease count
+      // Unfollowing - decrease target's followers, decrease current user's following
       newFollowerCounts[userId] = (newFollowerCounts[userId] ?? 1) - 1;
+      newFollowingCounts[currentUser.id] = (newFollowingCounts[currentUser.id] ?? 1) - 1;
     } else {
-      // Following - increase count
+      // Following - increase target's followers, increase current user's following
       newFollowerCounts[userId] = (newFollowerCounts[userId] ?? 0) + 1;
+      newFollowingCounts[currentUser.id] = (newFollowingCounts[currentUser.id] ?? 0) + 1;
     }
 
     state = state.copyWith(
       followingStatus: newFollowingStatus,
       followerCounts: newFollowerCounts,
+      followingCounts: newFollowingCounts,
+      isLoading: false,
     );
 
     try {
       bool success;
       if (currentlyFollowing) {
         success = await SupabaseService.unfollowUser(userId);
+        print('👥 Unfollowing user: $userId');
       } else {
         success = await SupabaseService.followUser(userId);
+        print('👥 Following user: $userId');
       }
 
-      if (!success) {
+      if (success) {
+        print('✅ Follow action successful');
+
+        // Wait a bit for database triggers to execute
+        await Future.delayed(Duration(milliseconds: 800));
+
+        // Refresh both users' actual counts from database
+        await _refreshUserCounts(userId);
+        await _refreshUserCounts(currentUser.id);
+
+        // Also refresh the auth provider's profile for current user
+        // But don't await it to avoid navigation issues
+        ref.read(authProvider.notifier).refreshProfile();
+
+        print('✅ Follow counts refreshed successfully');
+      } else {
+        print('❌ Follow action failed');
         // Revert optimistic update on failure
-        final revertFollowingStatus = {...state.followingStatus};
-        final revertFollowerCounts = {...state.followerCounts};
-
-        revertFollowingStatus[userId] = currentlyFollowing;
-
-        if (currentlyFollowing) {
-          revertFollowerCounts[userId] = (revertFollowerCounts[userId] ?? 0) + 1;
-        } else {
-          revertFollowerCounts[userId] = (revertFollowerCounts[userId] ?? 1) - 1;
-        }
-
-        state = state.copyWith(
-          followingStatus: revertFollowingStatus,
-          followerCounts: revertFollowerCounts,
-          error: 'Failed to update follow status',
-        );
+        _revertOptimisticUpdate(userId, currentUser.id, currentlyFollowing);
       }
     } catch (e) {
+      print('❌ Follow action error: $e');
       // Revert optimistic update on error
-      final revertFollowingStatus = {...state.followingStatus};
-      final revertFollowerCounts = {...state.followerCounts};
+      _revertOptimisticUpdate(userId, currentUser.id, currentlyFollowing);
+    }
+  }
 
-      revertFollowingStatus[userId] = currentlyFollowing;
+  void _revertOptimisticUpdate(String targetUserId, String currentUserId, bool wasFollowing) {
+    final revertFollowingStatus = {...state.followingStatus};
+    final revertFollowerCounts = {...state.followerCounts};
+    final revertFollowingCounts = {...state.followingCounts};
 
-      if (currentlyFollowing) {
-        revertFollowerCounts[userId] = (revertFollowerCounts[userId] ?? 0) + 1;
-      } else {
-        revertFollowerCounts[userId] = (revertFollowerCounts[userId] ?? 1) - 1;
+    revertFollowingStatus[targetUserId] = wasFollowing;
+
+    if (wasFollowing) {
+      // Was following, so revert the unfollow
+      revertFollowerCounts[targetUserId] = (revertFollowerCounts[targetUserId] ?? 0) + 1;
+      revertFollowingCounts[currentUserId] = (revertFollowingCounts[currentUserId] ?? 0) + 1;
+    } else {
+      // Wasn't following, so revert the follow
+      revertFollowerCounts[targetUserId] = (revertFollowerCounts[targetUserId] ?? 1) - 1;
+      revertFollowingCounts[currentUserId] = (revertFollowingCounts[currentUserId] ?? 1) - 1;
+    }
+
+    state = state.copyWith(
+      followingStatus: revertFollowingStatus,
+      followerCounts: revertFollowerCounts,
+      followingCounts: revertFollowingCounts,
+      error: 'Failed to update follow status',
+    );
+  }
+
+  Future<void> _refreshUserCounts(String userId) async {
+    try {
+      final profile = await SupabaseService.getProfile(userId);
+      if (profile != null) {
+        final newFollowerCounts = {...state.followerCounts};
+        final newFollowingCounts = {...state.followingCounts};
+
+        newFollowerCounts[userId] = profile['followers_count'] ?? 0;
+        newFollowingCounts[userId] = profile['following_count'] ?? 0;
+
+        state = state.copyWith(
+          followerCounts: newFollowerCounts,
+          followingCounts: newFollowingCounts,
+        );
+
+        print('✅ Refreshed counts for user $userId: followers=${profile['followers_count']}, following=${profile['following_count']}');
       }
-
-      state = state.copyWith(
-        followingStatus: revertFollowingStatus,
-        followerCounts: revertFollowerCounts,
-        error: 'Network error: $e',
-      );
+    } catch (e) {
+      print('❌ Error refreshing user counts for $userId: $e');
     }
   }
 
@@ -116,6 +166,29 @@ class FollowNotifier extends StateNotifier<FollowState> {
       state = state.copyWith(followingStatus: newFollowingStatus);
     } catch (e) {
       print('❌ Error checking follow status: $e');
+    }
+  }
+
+  // Load actual counts from database
+  Future<void> loadUserCounts(String userId) async {
+    try {
+      final profile = await SupabaseService.getProfile(userId);
+      if (profile != null) {
+        final newFollowerCounts = {...state.followerCounts};
+        final newFollowingCounts = {...state.followingCounts};
+
+        newFollowerCounts[userId] = profile['followers_count'] ?? 0;
+        newFollowingCounts[userId] = profile['following_count'] ?? 0;
+
+        state = state.copyWith(
+          followerCounts: newFollowerCounts,
+          followingCounts: newFollowingCounts,
+        );
+
+        print('✅ Loaded counts for user $userId: followers=${profile['followers_count']}, following=${profile['following_count']}');
+      }
+    } catch (e) {
+      print('❌ Error loading user counts: $e');
     }
   }
 
@@ -139,5 +212,5 @@ class FollowNotifier extends StateNotifier<FollowState> {
 }
 
 final followProvider = StateNotifierProvider<FollowNotifier, FollowState>((ref) {
-  return FollowNotifier();
+  return FollowNotifier(ref);
 });

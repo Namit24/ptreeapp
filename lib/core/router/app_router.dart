@@ -9,15 +9,15 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/home/screens/main_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
+import '../../features/profile/screens/edit_profile_screen.dart';
+import '../../features/profile/screens/user_screen.dart';
 import '../../features/projects/screens/project_detail_screen.dart';
 import '../../features/events/screens/event_detail_screen.dart';
 import '../../features/profile/screens/profile_setup_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final authNotifier = ref.read(authProvider.notifier);
-
   return GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/',
     refreshListenable: GoRouterRefreshStream(
       SupabaseService.authStateChanges.map((data) => data.session),
     ),
@@ -32,6 +32,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Allow auth callback to proceed
       if (currentLocation == '/auth/callback') return null;
 
+      // Don't redirect if on profile or edit-profile pages (prevent navigation issues)
+      if (currentLocation.startsWith('/profile/') || currentLocation == '/edit-profile') {
+        if (isLoggedIn) {
+          return null; // Stay on current profile page
+        }
+      }
+
       // If already on login and not logged in, stay there
       if (currentLocation == '/login' && !isLoggedIn) return null;
 
@@ -40,11 +47,10 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // If logged in, check profile completion
       if (isLoggedIn) {
-        // FIXED: Use watch to get reactive updates instead of read
         final authState = ref.watch(authProvider);
         final profile = authState.profile;
 
-        // FIXED: Don't redirect if profile is still loading
+        // Don't redirect if profile is still loading
         if (authState.isLoading) {
           print('Profile still loading, staying on current route');
           return null;
@@ -52,7 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
         final isProfileComplete = profile?['profile_completed'] == true;
 
-        print('Profile completion check - isComplete: $isProfileComplete, profile: ${profile?['profile_completed']}');
+        print('Profile completion check - isComplete: $isProfileComplete');
 
         // If on auth pages and logged in
         if (currentLocation == '/login' || currentLocation == '/register') {
@@ -87,6 +93,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      // Root route that handles initial navigation
+      GoRoute(
+        path: '/',
+        redirect: (context, state) {
+          final session = Supabase.instance.client.auth.currentSession;
+          final isLoggedIn = session?.user != null;
+
+          if (!isLoggedIn) {
+            return '/login';
+          }
+
+          // If logged in, let the main redirect logic handle it
+          return '/home';
+        },
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) {
@@ -101,6 +122,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile-setup',
         builder: (context, state) => const ProfileSetupScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
+      GoRoute(
+        path: '/users',
+        builder: (context, state) => const UsersScreen(),
       ),
       GoRoute(
         path: '/home',
