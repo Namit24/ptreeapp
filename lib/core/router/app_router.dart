@@ -38,14 +38,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       // If already on register and not logged in, stay there
       if (currentLocation == '/register' && !isLoggedIn) return null;
 
-      // If already on profile setup, stay there
-      if (currentLocation == '/profile-setup') return null;
-
       // If logged in, check profile completion
       if (isLoggedIn) {
-        // Get profile from auth provider using read instead of watch
-        final authState = ref.read(authProvider);
+        // FIXED: Use watch to get reactive updates instead of read
+        final authState = ref.watch(authProvider);
         final profile = authState.profile;
+
+        // FIXED: Don't redirect if profile is still loading
+        if (authState.isLoading) {
+          print('Profile still loading, staying on current route');
+          return null;
+        }
+
         final isProfileComplete = profile?['profile_completed'] == true;
 
         print('Profile completion check - isComplete: $isProfileComplete, profile: ${profile?['profile_completed']}');

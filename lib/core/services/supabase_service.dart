@@ -4,10 +4,9 @@ import 'dart:io';
 import '../config/supabase_config.dart';
 
 class SupabaseService {
-  // Make client getter public
   static SupabaseClient get client => Supabase.instance.client;
 
-  // ENHANCED Auth methods
+  // Auth methods
   static Future<AuthResponse> signUp({
     required String email,
     required String password,
@@ -15,7 +14,7 @@ class SupabaseService {
     required String lastName,
     String? username,
   }) async {
-    print('📝 Creating new account for: $email');
+    print('📝 Creating account for: $email');
 
     return await client.auth.signUp(
       email: email,
@@ -34,7 +33,7 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    print('🔐 Signing in user: $email');
+    print('🔐 Signing in: $email');
 
     return await client.auth.signInWithPassword(
       email: email,
@@ -43,55 +42,83 @@ class SupabaseService {
   }
 
   static Future<void> signOut() async {
-    print('👋 Signing out current user...');
+    print('👋 Signing out...');
     await client.auth.signOut();
   }
 
   static User? get currentUser => client.auth.currentUser;
-
   static Stream<AuthState> get authStateChanges => client.auth.onAuthStateChange;
 
-  // Profile methods
+  // FIXED: Profile methods with proper email handling
   static Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
-      print('👤 Loading profile for user: $userId');
+      print('👤 Loading profile for: $userId');
+
       final response = await client
           .from('profiles')
           .select()
           .eq('id', userId)
-          .single();
+          .maybeSingle();
 
-      print('✅ Profile loaded successfully');
-      return response;
+      if (response != null) {
+        print('✅ Profile found');
+        return response;
+      } else {
+        print('⚠️ No profile found');
+        return null;
+      }
     } catch (e) {
       print('❌ Error getting profile: $e');
       return null;
     }
   }
 
+  // FIXED: Include email in profile updates
   static Future<void> updateProfile({
     required String userId,
     required Map<String, dynamic> data,
   }) async {
-    print('📝 Updating profile for user: $userId');
-    await client
-        .from('profiles')
-        .update(data)
-        .eq('id', userId);
+    try {
+      print('📝 Updating profile for: $userId');
+
+      // Get current user email
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('No authenticated user found');
+      }
+
+      // Ensure email is always included
+      final updateData = {
+        'id': userId,
+        'email': currentUser.email, // Always include email
+        ...data,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+
+      print('Update data: $updateData');
+
+      await client
+          .from('profiles')
+          .upsert(updateData);
+
+      print('✅ Profile updated successfully');
+    } catch (e) {
+      print('❌ Error updating profile: $e');
+      throw Exception('Failed to update profile: $e');
+    }
   }
 
-  // ENHANCED: Profile image upload
+  // Profile image upload
   static Future<String> uploadProfileImage({
     required String userId,
     required File imageFile,
   }) async {
     try {
-      print('📸 Uploading profile image for user: $userId');
+      print('📸 Uploading profile image for: $userId');
 
       final fileName = 'profile_$userId.jpg';
       final filePath = 'profiles/$fileName';
 
-      // Upload to Supabase Storage
       await client.storage
           .from('avatars')
           .upload(filePath, imageFile, fileOptions: const FileOptions(
@@ -99,20 +126,19 @@ class SupabaseService {
         upsert: true,
       ));
 
-      // Get public URL
       final publicUrl = client.storage
           .from('avatars')
           .getPublicUrl(filePath);
 
-      print('✅ Profile image uploaded successfully: $publicUrl');
+      print('✅ Image uploaded: $publicUrl');
       return publicUrl;
     } catch (e) {
-      print('❌ Error uploading profile image: $e');
-      throw Exception('Failed to upload profile image: $e');
+      print('❌ Error uploading image: $e');
+      throw Exception('Failed to upload image: $e');
     }
   }
 
-  // Check username availability
+  // Username availability
   static Future<bool> isUsernameAvailable(String username) async {
     try {
       final response = await client
@@ -123,8 +149,137 @@ class SupabaseService {
 
       return response == null;
     } catch (e) {
-      print('❌ Error checking username availability: $e');
+      print('❌ Error checking username: $e');
       return false;
+    }
+  }
+
+  // Follow/Unfollow functionality
+  static Future<bool> followUser(String followingId) async {
+    try {
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) return false;
+
+      print('👥 Following user: $followingId');
+
+      await client.from('follows').insert({
+        'follower_id': currentUser.id,
+        'following_id': followingId,
+      });
+
+      print('✅ Successfully followed user');
+      return true;
+    } catch (e) {
+      print('❌ Error following user: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> unfollowUser(String followingId) async {
+    try {
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) return false;
+
+      print('👥 Unfollowing user: $followingId');
+
+      await client
+          .from('follows')
+          .delete()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', followingId);
+
+      print('✅ Successfully unfollowed user');
+      return true;
+    } catch (e) {
+      print('❌ Error unfollowing user: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> isFollowing(String userId) async {
+    try {
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) return false;
+
+      final response = await client
+          .from('follows')
+          .select()
+          .eq('follower_id', currentUser.id)
+          .eq('following_id', userId)
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      print('❌ Error checking follow status: $e');
+      return false;
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
+    try {
+      final response = await client
+          .from('follows')
+          .select('''
+            follower_id,
+            profiles!follows_follower_id_fkey (
+              id,
+              username,
+              full_name,
+              profile_image_url
+            )
+          ''')
+          .eq('following_id', userId);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error getting followers: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> getFollowing(String userId) async {
+    try {
+      final response = await client
+          .from('follows')
+          .select('''
+            following_id,
+            profiles!follows_following_id_fkey (
+              id,
+              username,
+              full_name,
+              profile_image_url
+            )
+          ''')
+          .eq('follower_id', userId);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error getting following: $e');
+      return [];
+    }
+  }
+
+  // Get all users for discovery
+  static Future<List<Map<String, dynamic>>> getAllUsers({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final currentUser = client.auth.currentUser;
+      if (currentUser == null) return [];
+
+      final response = await client
+          .from('profiles')
+          .select()
+          .neq('id', currentUser.id) // Exclude current user
+          .eq('profile_completed', true) // Only completed profiles
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error getting users: $e');
+      return [];
     }
   }
 
@@ -186,22 +341,21 @@ class SupabaseService {
     }
   }
 
-  // ENHANCED Google OAuth
+  // OAuth methods
   static Future<bool> signInWithGoogle() async {
     try {
       print('🔍 Initiating Google OAuth...');
 
-      // Use the correct redirect URL based on platform
       String redirectTo;
       if (kIsWeb) {
         redirectTo = SupabaseConfig.webRedirectUrl;
       } else {
-        redirectTo = SupabaseConfig.mobileredirectUrl;
+        redirectTo = SupabaseConfig.mobileRedirectUrl;
       }
 
-      print('🔗 Using redirect URL: $redirectTo');
+      print('🔗 Redirect URL: $redirectTo');
 
-      final response = await client.auth.signInWithOAuth(
+      await client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectTo,
         authScreenLaunchMode: kIsWeb
@@ -209,7 +363,7 @@ class SupabaseService {
             : LaunchMode.externalApplication,
       );
 
-      print('✅ Google OAuth request sent successfully');
+      print('✅ Google OAuth initiated');
       return true;
     } catch (e) {
       print('❌ Google OAuth error: $e');
@@ -217,22 +371,20 @@ class SupabaseService {
     }
   }
 
-  // ENHANCED GitHub OAuth
   static Future<bool> signInWithGitHub() async {
     try {
       print('🐙 Initiating GitHub OAuth...');
 
-      // Use the correct redirect URL based on platform
       String redirectTo;
       if (kIsWeb) {
         redirectTo = SupabaseConfig.webRedirectUrl;
       } else {
-        redirectTo = SupabaseConfig.mobileredirectUrl;
+        redirectTo = SupabaseConfig.mobileRedirectUrl;
       }
 
-      print('🔗 Using redirect URL: $redirectTo');
+      print('🔗 Redirect URL: $redirectTo');
 
-      final response = await client.auth.signInWithOAuth(
+      await client.auth.signInWithOAuth(
         OAuthProvider.github,
         redirectTo: redirectTo,
         authScreenLaunchMode: kIsWeb
@@ -240,7 +392,7 @@ class SupabaseService {
             : LaunchMode.externalApplication,
       );
 
-      print('✅ GitHub OAuth request sent successfully');
+      print('✅ GitHub OAuth initiated');
       return true;
     } catch (e) {
       print('❌ GitHub OAuth error: $e');
@@ -252,17 +404,13 @@ class SupabaseService {
   static Future<void> handleOAuthCallback() async {
     if (kIsWeb) {
       try {
-        // Get the current URL
         final currentUrl = Uri.base.toString();
-        print('🔗 Handling OAuth callback for URL: $currentUrl');
+        print('🔗 Handling OAuth callback: $currentUrl');
 
-        // Check if we have auth tokens in the URL
         if (currentUrl.contains('access_token') || currentUrl.contains('code')) {
-          // Let Supabase handle the session automatically
-          // The auth state listener will pick up the session change
-          print('✅ OAuth tokens detected in URL, letting Supabase handle session');
+          print('✅ OAuth tokens detected');
         } else {
-          print('⚠️ No OAuth tokens found in URL');
+          print('⚠️ No OAuth tokens found');
         }
       } catch (e) {
         print('❌ Error handling OAuth callback: $e');
@@ -273,17 +421,17 @@ class SupabaseService {
   // Password reset
   static Future<bool> resetPassword(String email) async {
     try {
-      print('🔄 Sending password reset email to: $email');
+      print('🔄 Sending password reset to: $email');
       await client.auth.resetPasswordForEmail(
         email,
         redirectTo: kIsWeb
             ? SupabaseConfig.webRedirectUrl
-            : SupabaseConfig.mobileredirectUrl,
+            : SupabaseConfig.mobileRedirectUrl,
       );
-      print('✅ Password reset email sent successfully');
+      print('✅ Password reset email sent');
       return true;
     } catch (e) {
-      print('❌ Error sending password reset email: $e');
+      print('❌ Error sending password reset: $e');
       return false;
     }
   }

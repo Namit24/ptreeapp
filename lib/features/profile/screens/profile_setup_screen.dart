@@ -1589,7 +1589,16 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
                   GestureDetector(
                     onTap: setupState.isGeneratingBio
                         ? null
-                        : () => ref.read(profileSetupProvider.notifier).generateAIBio(),
+                        : () async {
+                      await ref.read(profileSetupProvider.notifier).generateAIBio();
+                      // The bio is automatically updated in the provider state
+                      // We need to get it from the state and update the controller
+                      final updatedState = ref.read(profileSetupProvider);
+                      final generatedBio = updatedState.biography['bio'];
+                      if (generatedBio != null && generatedBio.isNotEmpty) {
+                        _bioController.text = generatedBio;
+                      }
+                    },
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                       decoration: BoxDecoration(

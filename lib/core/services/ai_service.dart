@@ -7,12 +7,18 @@ class AIService {
   static GenerativeModel get model {
     if (_model == null) {
       if (!AIConfig.isConfigured) {
-        throw Exception('Gemini API key not configured. Please add your API key to AIConfig.');
+        throw Exception('Gemini API key not configured');
       }
 
       _model = GenerativeModel(
-        model: AIConfig.modelName,
+        model: 'gemini-1.5-flash',
         apiKey: AIConfig.geminiApiKey,
+        generationConfig: GenerationConfig(
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 200,
+        ),
       );
     }
     return _model!;
@@ -24,11 +30,10 @@ class AIService {
     required List<String> interests,
     required List<String> skills,
     String? location,
-    String? college,
-    String? course,
   }) async {
     try {
       if (!AIConfig.isConfigured) {
+        print('⚠️ Gemini API key not configured, using fallback');
         return _getFallbackBio(firstName, interests, skills);
       }
 
@@ -38,22 +43,26 @@ class AIService {
         interests: interests,
         skills: skills,
         location: location,
-        college: college,
-        course: course,
       );
 
-      print('🤖 Generating AI bio...');
-      final response = await model.generateContent([Content.text(prompt)]);
+      print('🤖 Generating AI bio with Gemini...');
+      print('Prompt: ${prompt.substring(0, 100)}...');
+
+      final content = [Content.text(prompt)];
+      final response = await model.generateContent(content);
 
       if (response.text != null && response.text!.isNotEmpty) {
+        final generatedBio = response.text!.trim();
         print('✅ AI bio generated successfully');
-        return response.text!.trim();
+        print('Generated bio: ${generatedBio.substring(0, 50)}...');
+        return generatedBio;
       } else {
-        print('⚠️ AI returned empty response, using fallback');
+        print('⚠️ AI response was empty, using fallback');
         return _getFallbackBio(firstName, interests, skills);
       }
     } catch (e) {
-      print('❌ AI bio generation failed: $e');
+      print('❌ Error generating AI bio: $e');
+      print('Using fallback bio instead');
       return _getFallbackBio(firstName, interests, skills);
     }
   }
@@ -64,58 +73,36 @@ class AIService {
     required List<String> interests,
     required List<String> skills,
     String? location,
-    String? college,
-    String? course,
   }) {
-    final buffer = StringBuffer();
-    buffer.writeln('Generate a professional and engaging bio for a college student with the following details:');
-    buffer.writeln('Name: $firstName $lastName');
+    final interestsText = interests.take(5).join(', ');
+    final skillsText = skills.take(5).join(', ');
+    final locationText = location?.isNotEmpty == true ? ' from $location' : '';
 
-    if (college != null && college.isNotEmpty) {
-      buffer.writeln('College: $college');
-    }
+    return '''
+Write a professional and engaging bio for a college student named $firstName$locationText.
 
-    if (course != null && course.isNotEmpty) {
-      buffer.writeln('Course: $course');
-    }
+Their interests include: $interestsText
+Their skills include: $skillsText
 
-    if (location != null && location.isNotEmpty) {
-      buffer.writeln('Location: $location');
-    }
+Requirements:
+- Keep it under 150 words
+- Make it personal and authentic
+- Focus on their passion for learning and collaboration
+- Mention their interest in connecting with other students
+- Use a friendly, approachable tone
+- Don't use quotes or special formatting
+- Write in first person (I am, I love, etc.)
 
-    if (interests.isNotEmpty) {
-      buffer.writeln('Interests: ${interests.join(', ')}');
-    }
-
-    if (skills.isNotEmpty) {
-      buffer.writeln('Skills: ${skills.join(', ')}');
-    }
-
-    buffer.writeln('\nRequirements:');
-    buffer.writeln('- Keep it under 150 words');
-    buffer.writeln('- Make it professional yet friendly');
-    buffer.writeln('- Focus on their interests and skills');
-    buffer.writeln('- Suitable for a student networking platform');
-    buffer.writeln('- Do not include quotes or special formatting');
-    buffer.writeln('- Write in third person');
-
-    return buffer.toString();
+Example style: "Hi, I'm [name]! I'm passionate about [interests] and skilled in [skills]. I love collaborating on innovative projects and connecting with like-minded students. Let's build something amazing together!"
+''';
   }
 
   static String _getFallbackBio(String firstName, List<String> interests, List<String> skills) {
-    final buffer = StringBuffer();
-    buffer.write('$firstName is a passionate student');
+    final topInterests = interests.take(3).join(', ');
+    final topSkills = skills.take(3).join(', ');
 
-    if (interests.isNotEmpty) {
-      buffer.write(' with interests in ${interests.take(3).join(', ')}');
-    }
-
-    if (skills.isNotEmpty) {
-      buffer.write('. Skilled in ${skills.take(3).join(', ')}');
-    }
-
-    buffer.write(', $firstName is always eager to learn new things and connect with like-minded individuals.');
-
-    return buffer.toString();
+    return "Hi, I'm $firstName! I'm passionate about $topInterests and skilled in $topSkills. "
+        "I love collaborating on innovative projects and connecting with like-minded students. "
+        "Always excited to learn new things and work on meaningful projects. Let's build something amazing together!";
   }
 }
