@@ -27,7 +27,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _githubController = TextEditingController();
   final _linkedinController = TextEditingController();
   final _twitterController = TextEditingController();
-
+  
   List<String> _selectedInterests = [];
   List<String> _selectedSkills = [];
   File? _selectedImage;
@@ -57,7 +57,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   void _loadCurrentProfile() {
     final authState = ref.read(authProvider);
     final profile = authState.profile;
-
+    
     if (profile != null) {
       _firstNameController.text = profile['first_name']?.toString() ?? '';
       _lastNameController.text = profile['last_name']?.toString() ?? '';
@@ -68,7 +68,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       _githubController.text = profile['github']?.toString() ?? '';
       _linkedinController.text = profile['linkedin']?.toString() ?? '';
       _twitterController.text = profile['twitter']?.toString() ?? '';
-
+      
       if (profile['interests'] != null) {
         _selectedInterests = List<String>.from(profile['interests']);
       }
@@ -105,21 +105,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             onPressed: _isLoading ? null : _saveProfile,
             child: _isLoading
                 ? SizedBox(
-              width: 20.w,
-              height: 20.h,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(AppTheme.primaryYellow),
-              ),
-            )
+                    width: 20.w,
+                    height: 20.h,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(AppTheme.primaryYellow),
+                    ),
+                  )
                 : Text(
-              'Save',
-              style: TextStyle(
-                color: AppTheme.primaryYellow,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+                    'Save',
+                    style: TextStyle(
+                      color: AppTheme.primaryYellow,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -147,14 +147,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         child: _selectedImage != null
                             ? Image.file(_selectedImage!, fit: BoxFit.cover)
                             : profile?['profile_image_url'] != null
-                            ? Image.network(
-                          profile!['profile_image_url'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildAvatarPlaceholder();
-                          },
-                        )
-                            : _buildAvatarPlaceholder(),
+                                ? Image.network(
+                                    profile!['profile_image_url'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildAvatarPlaceholder();
+                                    },
+                                  )
+                                : _buildAvatarPlaceholder(),
                       ),
                     ),
                     Positioned(
@@ -172,27 +172,27 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ),
                           child: _isPickingImage
                               ? SizedBox(
-                            width: 18.w,
-                            height: 18.h,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(AppTheme.darkBackground),
-                            ),
-                          )
+                                  width: 18.w,
+                                  height: 18.h,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(AppTheme.darkBackground),
+                                  ),
+                                )
                               : Icon(
-                            Icons.camera_alt,
-                            color: AppTheme.darkBackground,
-                            size: 18.sp,
-                          ),
+                                  Icons.camera_alt,
+                                  color: AppTheme.darkBackground,
+                                  size: 18.sp,
+                                ),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-
+              
               SizedBox(height: 32.h),
-
+              
               // Personal Information
               Text(
                 'Personal Information',
@@ -203,7 +203,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               SizedBox(height: 16.h),
-
+              
               Row(
                 children: [
                   Expanded(
@@ -231,9 +231,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ),
                 ],
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'Username',
                 placeholder: 'Choose a unique username',
@@ -244,17 +244,17 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   return null;
                 },
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'Location',
                 placeholder: 'City, Country',
                 controller: _locationController,
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'Bio',
                 placeholder: 'Tell us about yourself...',
@@ -262,9 +262,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 maxLines: 3,
                 maxLength: 300,
               ),
-
+              
               SizedBox(height: 24.h),
-
+              
               // Interests Section
               Text(
                 'Interests',
@@ -275,7 +275,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               SizedBox(height: 12.h),
-
+              
               Wrap(
                 spacing: 8.w,
                 runSpacing: 8.h,
@@ -296,9 +296,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   );
                 }).toList(),
               ),
-
+              
               SizedBox(height: 24.h),
-
+              
               // Skills Section
               Text(
                 'Skills',
@@ -309,7 +309,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               SizedBox(height: 12.h),
-
+              
               Wrap(
                 spacing: 8.w,
                 runSpacing: 8.h,
@@ -330,9 +330,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   );
                 }).toList(),
               ),
-
+              
               SizedBox(height: 24.h),
-
+              
               // Social Links
               Text(
                 'Social Links',
@@ -343,37 +343,37 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
               ),
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'Website',
                 placeholder: 'https://yourwebsite.com',
                 controller: _websiteController,
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'GitHub',
                 placeholder: 'github.com/username',
                 controller: _githubController,
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'LinkedIn',
                 placeholder: 'linkedin.com/in/username',
                 controller: _linkedinController,
               ),
-
+              
               SizedBox(height: 16.h),
-
+              
               CustomInputField(
                 label: 'Twitter',
                 placeholder: 'twitter.com/username',
                 controller: _twitterController,
               ),
-
+              
               SizedBox(height: 40.h),
             ],
           ),
@@ -386,7 +386,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     final profile = ref.read(authProvider).profile;
     final firstName = profile?['first_name']?.toString() ?? profile?['full_name']?.toString() ?? 'U';
     final letter = firstName.isNotEmpty ? firstName[0].toUpperCase() : 'U';
-
+    
     return Container(
       color: AppTheme.primaryYellow.withOpacity(0.2),
       child: Center(
@@ -404,7 +404,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickImage() async {
     if (_isPickingImage) return; // Prevent multiple calls
-
+    
     setState(() {
       _isPickingImage = true;
     });
@@ -412,7 +412,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     try {
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
+      
       if (pickedFile != null) {
         setState(() {
           _selectedImage = File(pickedFile.path);
@@ -439,14 +439,14 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-
+    
     setState(() {
       _isLoading = true;
     });
 
     try {
       final authNotifier = ref.read(authProvider.notifier);
-
+      
       // Prepare update data
       final updateData = {
         'first_name': _firstNameController.text.trim(),
@@ -474,7 +474,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
       // Update profile
       await authNotifier.updateProfile(updateData);
-
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

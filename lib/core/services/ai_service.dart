@@ -3,13 +3,13 @@ import '../config/ai_config.dart';
 
 class AIService {
   static GenerativeModel? _model;
-
+  
   static GenerativeModel get model {
     if (_model == null) {
       if (!AIConfig.isConfigured) {
         throw Exception('Gemini API key not configured');
       }
-
+      
       _model = GenerativeModel(
         model: 'gemini-1.5-flash',
         apiKey: AIConfig.geminiApiKey,
@@ -100,9 +100,9 @@ Example style: "Hi, I'm [name]! I'm passionate about [interests] and skilled in 
   static String _getFallbackBio(String firstName, List<String> interests, List<String> skills) {
     final topInterests = interests.take(3).join(', ');
     final topSkills = skills.take(3).join(', ');
-
+    
     return "Hi, I'm $firstName! I'm passionate about $topInterests and skilled in $topSkills. "
-        "I love collaborating on innovative projects and connecting with like-minded students. "
-        "Always excited to learn new things and work on meaningful projects. Let's build something amazing together!";
+           "I love collaborating on innovative projects and connecting with like-minded students. "
+           "Always excited to learn new things and work on meaningful projects. Let's build something amazing together!";
   }
 }

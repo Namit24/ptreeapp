@@ -8,14 +8,14 @@ class AuthState {
   final Map<String, dynamic>? profile;
   final bool isLoading;
   final String? error;
-  final bool hasNetworkError; // ADDED: Track network errors
+  final bool hasNetworkError;
 
   AuthState({
     this.user,
     this.profile,
     this.isLoading = false,
     this.error,
-    this.hasNetworkError = false, // ADDED: Default to false
+    this.hasNetworkError = false,
   });
 
   AuthState copyWith({
@@ -23,25 +23,24 @@ class AuthState {
     Map<String, dynamic>? profile,
     bool? isLoading,
     String? error,
-    bool? hasNetworkError, // ADDED: Include in copyWith
+    bool? hasNetworkError,
   }) {
     return AuthState(
       user: user ?? this.user,
       profile: profile ?? this.profile,
       isLoading: isLoading ?? this.isLoading,
       error: error,
-      hasNetworkError: hasNetworkError ?? this.hasNetworkError, // ADDED
+      hasNetworkError: hasNetworkError ?? this.hasNetworkError,
     );
   }
 
   // FIXED: More robust profile completion check
   bool get isProfileComplete {
-    // ADDED: If there's a network error, assume profile is complete to avoid redirect loop
     if (hasNetworkError) {
       print('🌐 Network error detected, assuming profile is complete to avoid redirect loop');
       return true;
     }
-
+    
     if (profile == null) {
       print('❌ Profile completion check: No profile data');
       return false;
@@ -50,25 +49,30 @@ class AuthState {
     // Check if explicitly marked as complete
     final isMarkedComplete = profile!['profile_completed'] == true;
 
-    // Check required fields
-    final hasFirstName = profile!['first_name']?.toString().trim().isNotEmpty == true;
-    final hasLastName = profile!['last_name']?.toString().trim().isNotEmpty == true;
-    final hasUsername = profile!['username']?.toString().trim().isNotEmpty == true;
+    // Check required fields with better null safety
+    final firstName = profile!['first_name']?.toString().trim() ?? '';
+    final lastName = profile!['last_name']?.toString().trim() ?? '';
+    final username = profile!['username']?.toString().trim() ?? '';
 
-    // Check interests and skills
+    final hasFirstName = firstName.isNotEmpty;
+    final hasLastName = lastName.isNotEmpty;
+    final hasUsername = username.isNotEmpty;
+
+    // Check interests and skills with better null safety
     final interests = profile!['interests'];
     final skills = profile!['skills'];
 
     final hasInterests = interests is List && interests.isNotEmpty;
     final hasSkills = skills is List && skills.isNotEmpty;
 
-    final isComplete = isMarkedComplete && hasFirstName && hasLastName && hasUsername && hasInterests && hasSkills;
+    // FIXED: More lenient completion check
+    final isComplete = isMarkedComplete || (hasFirstName && hasLastName && hasUsername);
 
     print('🔍 Profile completion check:');
     print('  - Marked complete: $isMarkedComplete');
-    print('  - Has first name: $hasFirstName (${profile!['first_name']})');
-    print('  - Has last name: $hasLastName (${profile!['last_name']})');
-    print('  - Has username: $hasUsername (${profile!['username']})');
+    print('  - Has first name: $hasFirstName ($firstName)');
+    print('  - Has last name: $hasLastName ($lastName)');
+    print('  - Has username: $hasUsername ($username)');
     print('  - Has interests: $hasInterests ($interests)');
     print('  - Has skills: $hasSkills ($skills)');
     print('  - Final result: $isComplete');
@@ -127,18 +131,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
     } catch (e) {
       print('❌ Error loading profile: $e');
-
-      // ADDED: Check if it's a network error
-      final isNetworkError = e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('No address associated');
+      
+      final isNetworkError = e.toString().contains('SocketException') || 
+                           e.toString().contains('Failed host lookup') ||
+                           e.toString().contains('Connection reset') ||
+                           e.toString().contains('No address associated');
 
       if (isNetworkError) {
         print('🌐 Network error detected, setting offline mode');
         state = state.copyWith(
-          user: user,
-          profile: null,
-          isLoading: false,
+          user: user, 
+          profile: null, 
+          isLoading: false, 
           hasNetworkError: true,
           error: 'Network connection failed. Please check your internet connection.',
         );
@@ -156,7 +160,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // ADDED: Upload profile image method
+  // Upload profile image method
   Future<String> uploadProfileImage(File imageFile) async {
     try {
       final user = state.user;
@@ -185,7 +189,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // ADDED: Update profile method
+  // Update profile method
   Future<void> updateProfile(Map<String, dynamic> updates) async {
     try {
       final user = state.user;
@@ -242,11 +246,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Unexpected error: $e');
-
-      // ADDED: Check for network errors
-      final isNetworkError = e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup');
-
+      
+      final isNetworkError = e.toString().contains('SocketException') || 
+                           e.toString().contains('Failed host lookup') ||
+                           e.toString().contains('Connection reset');
+      
       state = state.copyWith(
         isLoading: false,
         hasNetworkError: isNetworkError,
@@ -306,11 +310,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Unexpected error: $e');
-
-      // ADDED: Check for network errors
-      final isNetworkError = e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup');
-
+      
+      final isNetworkError = e.toString().contains('SocketException') || 
+                           e.toString().contains('Failed host lookup') ||
+                           e.toString().contains('Connection reset');
+      
       state = state.copyWith(
         isLoading: false,
         hasNetworkError: isNetworkError,
@@ -340,11 +344,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Google sign in error: $e');
-
-      // ADDED: Check for network errors
-      final isNetworkError = e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup');
-
+      
+      final isNetworkError = e.toString().contains('SocketException') || 
+                           e.toString().contains('Failed host lookup') ||
+                           e.toString().contains('Connection reset');
+      
       state = state.copyWith(
         isLoading: false,
         hasNetworkError: isNetworkError,
@@ -374,11 +378,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ GitHub sign in error: $e');
-
-      // ADDED: Check for network errors
-      final isNetworkError = e.toString().contains('SocketException') ||
-          e.toString().contains('Failed host lookup');
-
+      
+      final isNetworkError = e.toString().contains('SocketException') || 
+                           e.toString().contains('Failed host lookup') ||
+                           e.toString().contains('Connection reset');
+      
       state = state.copyWith(
         isLoading: false,
         hasNetworkError: isNetworkError,

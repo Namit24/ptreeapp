@@ -39,9 +39,9 @@ class ProfileSetupSuccessDialog extends StatelessWidget {
                 size: 50.sp,
               ),
             ),
-
+            
             SizedBox(height: 24.h),
-
+            
             // Title
             Text(
               'Profile Complete! 🎉',
@@ -52,9 +52,9 @@ class ProfileSetupSuccessDialog extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-
+            
             SizedBox(height: 12.h),
-
+            
             // Description
             Text(
               'Welcome to ProjecTree! Your profile is now complete and you can start connecting with other students.',
@@ -65,9 +65,9 @@ class ProfileSetupSuccessDialog extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-
+            
             SizedBox(height: 32.h),
-
+            
             // Action Buttons
             Row(
               children: [

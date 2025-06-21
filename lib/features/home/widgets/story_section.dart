@@ -10,21 +10,24 @@ class StorySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
-    final user = authState.user;
     final profile = authState.profile;
 
-    // Get user's display name from profile or email
-    String displayName = 'You';
-    if (profile != null) {
-      // Try to get name from profile first
+    // Get display name from profile data, not user auth data
+    String getDisplayName() {
+      if (profile == null) return 'You';
+      
+      // Try to get name from profile
       final firstName = profile['first_name'] as String?;
       final lastName = profile['last_name'] as String?;
-      if (firstName != null || lastName != null) {
-        displayName = '${firstName ?? ''} ${lastName ?? ''}'.trim();
+      final username = profile['username'] as String?;
+      
+      if (firstName != null && firstName.isNotEmpty) {
+        return firstName;
+      } else if (username != null && username.isNotEmpty) {
+        return username;
+      } else {
+        return 'You';
       }
-    } else if (user?.email != null) {
-      // Fallback to email username part
-      displayName = user!.email!.split('@').first;
     }
 
     return Container(
@@ -35,9 +38,9 @@ class StorySection extends ConsumerWidget {
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         children: [
           // Add Your Story
-          _buildAddStoryItem(displayName),
+          _buildAddStoryItem(getDisplayName()),
           SizedBox(width: 12.w),
-
+          
           // Sample Stories (you can replace with real data)
           ..._buildSampleStories(),
         ],
@@ -128,10 +131,10 @@ class StorySection extends ConsumerWidget {
           decoration: BoxDecoration(
             gradient: hasStory
                 ? LinearGradient(
-              colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            )
+                    colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
                 : null,
             color: hasStory ? null : AppTheme.borderColor,
             borderRadius: BorderRadius.circular(30.r),

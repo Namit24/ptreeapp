@@ -35,12 +35,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     try {
       final profile = await SupabaseService.getProfile(widget.userId);
-
+      
       if (profile != null) {
         // Load follow status and counts
         await ref.read(followProvider.notifier).checkFollowStatus(widget.userId);
         await ref.read(followProvider.notifier).loadUserCounts(widget.userId);
-
+        
         setState(() {
           userProfile = profile;
           isLoading = false;
@@ -63,12 +63,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     // Don't show loading indicator for refresh
     try {
       final profile = await SupabaseService.getProfile(widget.userId);
-
+      
       if (profile != null) {
         // Refresh follow status and counts
         await ref.read(followProvider.notifier).checkFollowStatus(widget.userId);
         await ref.read(followProvider.notifier).loadUserCounts(widget.userId);
-
+        
         setState(() {
           userProfile = profile;
         });
@@ -214,25 +214,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 borderRadius: BorderRadius.circular(37.r),
                 child: userProfile!['profile_image_url'] != null
                     ? CachedNetworkImage(
-                  imageUrl: userProfile!['profile_image_url'],
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppTheme.primaryYellow.withOpacity(0.2),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppTheme.primaryYellow,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
-                )
+                        imageUrl: userProfile!['profile_image_url'],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: AppTheme.primaryYellow.withOpacity(0.2),
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryYellow,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                      )
                     : _buildAvatarPlaceholder(),
               ),
             ),
-
+            
             SizedBox(width: 20.w),
-
+            
             // Profile Info
             Expanded(
               child: Column(
@@ -279,17 +279,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
-
+        
         SizedBox(height: 20.h),
-
+        
         // Follow Button
         FollowButton(
           userId: widget.userId,
           isFollowing: isFollowing,
         ),
-
+        
         SizedBox(height: 20.h),
-
+        
         // Stats - Show real-time counts
         Row(
           children: [
@@ -298,7 +298,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             _buildStatItem('Following', followingCount),
           ],
         ),
-
+        
         // Bio
         if (userProfile!['bio']?.isNotEmpty == true) ...[
           SizedBox(height: 20.h),
@@ -320,7 +320,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
         ],
-
+        
         // Interests
         if ((userProfile!['interests'] as List?)?.isNotEmpty == true) ...[
           SizedBox(height: 20.h),
@@ -356,7 +356,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             }).toList(),
           ),
         ],
-
+        
         // Skills
         if ((userProfile!['skills'] as List?)?.isNotEmpty == true) ...[
           SizedBox(height: 20.h),
@@ -399,7 +399,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Widget _buildAvatarPlaceholder() {
     final name = userProfile?['full_name'] ?? userProfile?['first_name'] ?? 'U';
     final letter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'U';
-
+    
     return Container(
       color: AppTheme.primaryYellow.withOpacity(0.2),
       child: Center(

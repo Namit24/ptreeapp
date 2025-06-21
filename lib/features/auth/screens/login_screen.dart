@@ -42,9 +42,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-
+    
     _fadeController.forward();
-
+    
     // Clear any previous errors when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -79,29 +79,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: 50.h), // Reduced from 60.h
-
+                
                 // Header Section with animations
                 _buildHeader()
                     .animate()
                     .fadeIn(duration: 600.ms, delay: 100.ms)
                     .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+                
                 SizedBox(height: 32.h), // Reduced from 40.h
-
+                
                 // Form Section with staggered animations
                 _buildForm(authState)
                     .animate()
                     .fadeIn(duration: 600.ms, delay: 300.ms)
                     .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+                
                 SizedBox(height: 24.h), // Reduced from 32.h
-
+                
                 // Social Login Section
                 _buildSocialLogin(authState)
                     .animate()
                     .fadeIn(duration: 600.ms, delay: 500.ms)
                     .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+                
                 SizedBox(height: 32.h), // Reduced from 40.h
               ],
             ),
@@ -140,9 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.05, 1.05), duration: 2000.ms)
             .then()
             .scale(begin: const Offset(1.05, 1.05), end: const Offset(1.0, 1.0), duration: 2000.ms),
-
+        
         SizedBox(height: 28.h), // Reduced from 32.h
-
+        
         Text(
           'Welcome to ProjecTree',
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
@@ -154,9 +154,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             .animate()
             .fadeIn(duration: 800.ms, delay: 200.ms)
             .slideX(begin: -0.3, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
+        
         SizedBox(height: 10.h), // Reduced from 12.h
-
+        
         Text(
           'Your journey starts here. Join our community and\ndiscover the power of collaborative innovations.',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -168,9 +168,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             .animate()
             .fadeIn(duration: 800.ms, delay: 400.ms)
             .slideX(begin: 0.3, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
+        
         SizedBox(height: 28.h), // Reduced from 32.h
-
+        
         // Toggle Buttons with smooth transition
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -250,19 +250,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                 child: FadeTransition(opacity: animation, child: child),
               );
             },
-            child: _isSignUp
+            child: _isSignUp 
                 ? Column(
-              key: const ValueKey('signup'),
-              children: _buildSignUpFields(),
-            )
+                    key: const ValueKey('signup'),
+                    children: _buildSignUpFields(),
+                  )
                 : Column(
-              key: const ValueKey('signin'),
-              children: _buildSignInFields(),
-            ),
+                    key: const ValueKey('signin'),
+                    children: _buildSignInFields(),
+                  ),
           ),
-
+          
           SizedBox(height: 28.h), // Reduced from 32.h
-
+          
           // Submit Button with loading animation
           SizedBox(
             height: 50.h, // Reduced from 56.h
@@ -281,33 +281,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                 duration: const Duration(milliseconds: 200),
                 child: authState.isLoading
                     ? SizedBox(
-                  height: 20.h, // Reduced from 24.h
-                  width: 20.w, // Reduced from 24.w
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.darkBackground),
-                  ),
-                )
+                        height: 20.h, // Reduced from 24.h
+                        width: 20.w, // Reduced from 24.w
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.darkBackground),
+                        ),
+                      )
                     : Text(
-                  _isSignUp ? 'Create Account' : 'Sign In',
-                  style: TextStyle(
-                    fontSize: 16.sp, // Reduced from 18.sp
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                        _isSignUp ? 'Create Account' : 'Sign In',
+                        style: TextStyle(
+                          fontSize: 16.sp, // Reduced from 18.sp
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
               ),
             ),
           )
               .animate(target: authState.isLoading ? 1 : 0)
               .scale(begin: const Offset(1.0, 1.0), end: const Offset(0.98, 0.98), duration: 100.ms),
-
+          
           // Error Message with slide animation
           if (authState.error != null) ...[
             SizedBox(height: 14.h), // Reduced from 16.h
             Container(
               padding: EdgeInsets.all(14.w), // Reduced from 16.w
               decoration: BoxDecoration(
-                color: authState.error!.contains('check your email')
+                color: authState.error!.contains('check your email') 
                     ? Colors.blue.withOpacity(0.1)
                     : Colors.red.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10.r), // Reduced from 12.r
@@ -380,7 +380,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
               child: _buildSocialButton(
                 'Google',
                 Icons.g_mobiledata,
-                    () => _handleGoogleLogin(),
+                () => _handleGoogleLogin(),
                 authState.isLoading,
               ),
             ),
@@ -389,7 +389,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
               child: _buildSocialButton(
                 'GitHub',
                 Icons.code,
-                    () => _handleGitHubLogin(),
+                () => _handleGitHubLogin(),
                 authState.isLoading,
               ),
             ),
@@ -416,7 +416,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             Icon(icon, size: 20.sp, color: AppTheme.textWhite), // Reduced from 24.sp
             SizedBox(width: 10.w), // Reduced from 12.w
             Text(
-              text,
+              text, 
               style: TextStyle(
                 fontSize: 14.sp, // Reduced from 16.sp
                 fontWeight: FontWeight.w500,
@@ -450,9 +450,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           .animate()
           .fadeIn(duration: 400.ms, delay: 100.ms)
           .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+      
       SizedBox(height: 18.h), // Reduced from 20.h
-
+      
       _buildInputField(
         label: 'Password',
         controller: _passwordController,
@@ -522,7 +522,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           .animate()
           .fadeIn(duration: 400.ms, delay: 200.ms)
           .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+      
       SizedBox(height: 18.h),
       _buildInputField(
         label: 'Email',
@@ -540,7 +540,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           .animate()
           .fadeIn(duration: 400.ms, delay: 250.ms)
           .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+      
       SizedBox(height: 18.h),
       _buildInputField(
         label: 'Password',
@@ -564,7 +564,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           .animate()
           .fadeIn(duration: 400.ms, delay: 300.ms)
           .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+      
       SizedBox(height: 18.h),
       _buildInputField(
         label: 'Confirm Password',
@@ -640,11 +640,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
               borderSide: BorderSide(color: Colors.red, width: 1.5),
             ),
             contentPadding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 16.h), // Reduced padding
-            suffixIcon: suffixWidget != null
+            suffixIcon: suffixWidget != null 
                 ? Padding(
-              padding: EdgeInsets.only(right: 14.w), // Reduced from 16.w
-              child: suffixWidget,
-            )
+                    padding: EdgeInsets.only(right: 14.w), // Reduced from 16.w
+                    child: suffixWidget,
+                  )
                 : null,
             suffixIconConstraints: const BoxConstraints(
               minWidth: 0,
@@ -659,15 +659,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
   Future<void> _handleSubmit() async {
     if (_formKey.currentState?.validate() ?? false) {
       bool success;
-
+      
       if (_isSignUp) {
         success = await ref.read(authProvider.notifier).signUp(
           email: _signUpEmailController.text.trim(),
           password: _signUpPasswordController.text,
           firstName: _firstNameController.text.trim(),
           lastName: _lastNameController.text.trim(),
-          username: _usernameController.text.trim().isEmpty
-              ? null
+          username: _usernameController.text.trim().isEmpty 
+              ? null 
               : _usernameController.text.trim(),
         );
       } else {
@@ -676,7 +676,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           _passwordController.text,
         );
       }
-
+      
       if (success && mounted) {
         context.go('/home');
       }

@@ -9,7 +9,7 @@ class ApiService {
   ApiService(this._dio) {
     // Remove the backend URL since we're using Supabase directly
     // _dio.options.baseUrl = 'https://your-projectree-domain.vercel.app/api';
-
+    
     // Add request/response interceptors for debugging
     _dio.interceptors.add(LogInterceptor(
       requestBody: true,
@@ -25,7 +25,7 @@ class ApiService {
   Future<Map<String, dynamic>> mockLogin(String email, String password) async {
     // Simulate API delay
     await Future.delayed(const Duration(seconds: 2));
-
+    
     // Mock successful login
     if (email.isNotEmpty && password.isNotEmpty) {
       return {

@@ -17,7 +17,7 @@ class SupabaseService {
     String? username,
   }) async {
     print('📝 Creating account for: $email');
-
+    
     return await client.auth.signUp(
       email: email,
       password: password,
@@ -36,7 +36,7 @@ class SupabaseService {
     required String password,
   }) async {
     print('🔐 Signing in: $email');
-
+    
     return await client.auth.signInWithPassword(
       email: email,
       password: password,
@@ -55,13 +55,13 @@ class SupabaseService {
   static Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
       print('👤 Loading profile for: $userId');
-
+      
       final response = await client
           .from('profiles')
           .select()
           .eq('id', userId)
           .maybeSingle();
-
+      
       if (response != null) {
         print('✅ Profile found');
         return response;
@@ -82,13 +82,13 @@ class SupabaseService {
   }) async {
     try {
       print('📝 Updating profile for: $userId');
-
+      
       // Get current user email
       final currentUser = client.auth.currentUser;
       if (currentUser == null) {
         throw Exception('No authenticated user found');
       }
-
+      
       // Ensure email is always included
       final updateData = {
         'id': userId,
@@ -96,13 +96,13 @@ class SupabaseService {
         ...data,
         'updated_at': DateTime.now().toIso8601String(),
       };
-
+      
       print('Update data: $updateData');
-
+      
       await client
           .from('profiles')
           .upsert(updateData);
-
+      
       print('✅ Profile updated successfully');
     } catch (e) {
       print('❌ Error updating profile: $e');
@@ -117,53 +117,53 @@ class SupabaseService {
   }) async {
     try {
       print('🚀 Starting profile image upload for user: $userId');
-
+      
       // Read file as bytes
       final Uint8List fileBytes = await imageFile.readAsBytes();
       final String fileExtension = path.extension(imageFile.path).toLowerCase();
-
+      
       // Validate file type
       if (!['.jpg', '.jpeg', '.png', '.webp'].contains(fileExtension)) {
         throw Exception('Unsupported file type. Please use JPG, PNG, or WebP.');
       }
-
+      
       // Validate file size (5MB limit)
       if (fileBytes.length > 5 * 1024 * 1024) {
         throw Exception('File too large. Please choose an image smaller than 5MB.');
       }
-
+      
       // Generate unique filename
       final String fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
       final String filePath = '$userId/$fileName';
-
+      
       print('📁 Uploading to path: $filePath');
       print('📊 File size: ${fileBytes.length} bytes');
-
+      
       // Upload to Supabase Storage using binary upload
       final String uploadPath = await client.storage
           .from('avatars')
           .uploadBinary(
-        filePath,
-        fileBytes,
-        fileOptions: FileOptions(
-          cacheControl: '3600',
-          upsert: true, // Allow overwriting
-        ),
-      );
-
+            filePath,
+            fileBytes,
+            fileOptions: FileOptions(
+              cacheControl: '3600',
+              upsert: true, // Allow overwriting
+            ),
+          );
+      
       print('✅ Upload successful: $uploadPath');
-
+      
       // Get public URL
       final String publicUrl = client.storage
           .from('avatars')
           .getPublicUrl(filePath);
-
+      
       print('🌐 Public URL: $publicUrl');
-
+      
       return publicUrl;
     } catch (e) {
       print('❌ Upload error details: $e');
-
+      
       // Provide more specific error messages
       if (e.toString().contains('row-level security policy')) {
         throw Exception('Storage permission denied. Please contact support.');
@@ -185,7 +185,7 @@ class SupabaseService {
           .select('username')
           .eq('username', username)
           .maybeSingle();
-
+      
       return response == null;
     } catch (e) {
       print('❌ Error checking username: $e');
@@ -194,73 +194,95 @@ class SupabaseService {
   }
 
   // Follow/Unfollow functionality
-  static Future<bool> followUser(String followingId) async {
-    try {
-      final currentUser = client.auth.currentUser;
-      if (currentUser == null) return false;
+static Future<bool> followUser(String followerId, String followingId) async {
+  try {
+    print('👥 Following user: $followingId');
 
-      print('👥 Following user: $followingId');
+    await client.from('follows').insert({
+      'follower_id': followerId,
+      'following_id': followingId,
+    });
 
-      await client.from('follows').insert({
-        'follower_id': currentUser.id,
-        'following_id': followingId,
-      });
+    // Update counts for both users
+    await updateFollowCounts(followingId); // Update followed user's follower count
+    await updateFollowCounts(followerId); // Update current user's following count
 
-      // Update counts for both users
-      await updateFollowCounts(followingId); // Update followed user's follower count
-      await updateFollowCounts(currentUser.id); // Update current user's following count
-
-      print('✅ Successfully followed user');
-      return true;
-    } catch (e) {
-      print('❌ Error following user: $e');
-      return false;
-    }
+    print('✅ Successfully followed user');
+    return true;
+  } catch (e) {
+    print('❌ Error following user: $e');
+    return false;
   }
+}
 
-  static Future<bool> unfollowUser(String followingId) async {
-    try {
-      final currentUser = client.auth.currentUser;
-      if (currentUser == null) return false;
+static Future<bool> unfollowUser(String followerId, String followingId) async {
+  try {
+    print('👥 Unfollowing user: $followingId');
 
-      print('👥 Unfollowing user: $followingId');
+    await client
+        .from('follows')
+        .delete()
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId);
 
-      await client
-          .from('follows')
-          .delete()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', followingId);
+    // Update counts for both users
+    await updateFollowCounts(followingId); // Update unfollowed user's follower count
+    await updateFollowCounts(followerId); // Update current user's following count
 
-      // Update counts for both users
-      await updateFollowCounts(followingId); // Update unfollowed user's follower count
-      await updateFollowCounts(currentUser.id); // Update current user's following count
-
-      print('✅ Successfully unfollowed user');
-      return true;
-    } catch (e) {
-      print('❌ Error unfollowing user: $e');
-      return false;
-    }
+    print('✅ Successfully unfollowed user');
+    return true;
+  } catch (e) {
+    print('❌ Error unfollowing user: $e');
+    return false;
   }
+}
 
-  static Future<bool> isFollowing(String userId) async {
-    try {
-      final currentUser = client.auth.currentUser;
-      if (currentUser == null) return false;
+static Future<bool> isFollowing(String followerId, String followingId) async {
+  try {
+    final response = await client
+        .from('follows')
+        .select()
+        .eq('follower_id', followerId)
+        .eq('following_id', followingId)
+        .maybeSingle();
 
-      final response = await client
-          .from('follows')
-          .select()
-          .eq('follower_id', currentUser.id)
-          .eq('following_id', userId)
-          .maybeSingle();
-
-      return response != null;
-    } catch (e) {
-      print('❌ Error checking follow status: $e');
-      return false;
-    }
+    return response != null;
+  } catch (e) {
+    print('❌ Error checking follow status: $e');
+    return false;
   }
+}
+
+static Future<Map<String, int>> getUserCounts(String userId) async {
+  try {
+    // Get follower count
+    final followersResponse = await client
+        .from('follows')
+        .select('id')
+        .eq('following_id', userId);
+    
+    final followerCount = followersResponse.length;
+    
+    // Get following count  
+    final followingResponse = await client
+        .from('follows')
+        .select('id')
+        .eq('follower_id', userId);
+    
+    final followingCount = followingResponse.length;
+    
+    return {
+      'followers_count': followerCount,
+      'following_count': followingCount,
+    };
+  } catch (e) {
+    print('❌ Error getting user counts: $e');
+    return {
+      'followers_count': 0,
+      'following_count': 0,
+    };
+  }
+}
 
   static Future<List<Map<String, dynamic>>> getFollowers(String userId) async {
     try {
@@ -334,7 +356,7 @@ class SupabaseService {
   static Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     try {
       print('🔍 Searching users with query: $query');
-
+      
       final currentUser = client.auth.currentUser;
       if (currentUser == null) return [];
 
@@ -374,7 +396,7 @@ class SupabaseService {
           ''')
           .order('created_at', ascending: false)
           .range(offset, offset + limit - 1);
-
+      
       print('✅ Loaded ${response.length} projects');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -403,7 +425,7 @@ class SupabaseService {
           ''')
           .order('event_date', ascending: true)
           .range(offset, offset + limit - 1);
-
+      
       print('✅ Loaded ${response.length} events');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
@@ -416,24 +438,24 @@ class SupabaseService {
   static Future<bool> signInWithGoogle() async {
     try {
       print('🔍 Initiating Google OAuth...');
-
+      
       String redirectTo;
       if (kIsWeb) {
         redirectTo = SupabaseConfig.webRedirectUrl;
       } else {
         redirectTo = SupabaseConfig.mobileRedirectUrl;
       }
-
+      
       print('🔗 Redirect URL: $redirectTo');
-
+      
       await client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: redirectTo,
-        authScreenLaunchMode: kIsWeb
-            ? LaunchMode.platformDefault
+        authScreenLaunchMode: kIsWeb 
+            ? LaunchMode.platformDefault 
             : LaunchMode.externalApplication,
       );
-
+      
       print('✅ Google OAuth initiated');
       return true;
     } catch (e) {
@@ -445,24 +467,24 @@ class SupabaseService {
   static Future<bool> signInWithGitHub() async {
     try {
       print('🐙 Initiating GitHub OAuth...');
-
+      
       String redirectTo;
       if (kIsWeb) {
         redirectTo = SupabaseConfig.webRedirectUrl;
       } else {
         redirectTo = SupabaseConfig.mobileRedirectUrl;
       }
-
+      
       print('🔗 Redirect URL: $redirectTo');
-
+      
       await client.auth.signInWithOAuth(
         OAuthProvider.github,
         redirectTo: redirectTo,
-        authScreenLaunchMode: kIsWeb
-            ? LaunchMode.platformDefault
+        authScreenLaunchMode: kIsWeb 
+            ? LaunchMode.platformDefault 
             : LaunchMode.externalApplication,
       );
-
+      
       print('✅ GitHub OAuth initiated');
       return true;
     } catch (e) {
@@ -477,7 +499,7 @@ class SupabaseService {
       try {
         final currentUrl = Uri.base.toString();
         print('🔗 Handling OAuth callback: $currentUrl');
-
+        
         if (currentUrl.contains('access_token') || currentUrl.contains('code')) {
           print('✅ OAuth tokens detected');
         } else {
@@ -495,8 +517,8 @@ class SupabaseService {
       print('🔄 Sending password reset to: $email');
       await client.auth.resetPasswordForEmail(
         email,
-        redirectTo: kIsWeb
-            ? SupabaseConfig.webRedirectUrl
+        redirectTo: kIsWeb 
+            ? SupabaseConfig.webRedirectUrl 
             : SupabaseConfig.mobileRedirectUrl,
       );
       print('✅ Password reset email sent');
@@ -511,33 +533,33 @@ class SupabaseService {
   static Future<void> updateFollowCounts(String userId) async {
     try {
       print('📊 Updating follow counts for user: $userId');
-
+      
       // Get follower count
       final followersResponse = await client
           .from('follows')
           .select('id')
           .eq('following_id', userId);
-
+      
       final followerCount = followersResponse.length;
-
-      // Get following count
+      
+      // Get following count  
       final followingResponse = await client
           .from('follows')
           .select('id')
           .eq('follower_id', userId);
-
+      
       final followingCount = followingResponse.length;
-
+      
       // Update profile with new counts
       await client
           .from('profiles')
           .update({
-        'followers_count': followerCount,
-        'following_count': followingCount,
-        'updated_at': DateTime.now().toIso8601String(),
-      })
+            'followers_count': followerCount,
+            'following_count': followingCount,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('id', userId);
-
+      
       print('✅ Updated counts - Followers: $followerCount, Following: $followingCount');
     } catch (e) {
       print('❌ Error updating follow counts: $e');

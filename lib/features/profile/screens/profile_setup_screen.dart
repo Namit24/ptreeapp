@@ -60,7 +60,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
   @override
   Widget build(BuildContext context) {
     final setupState = ref.watch(profileSetupProvider);
-
+    
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       body: SafeArea(
@@ -134,7 +134,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               )
                   .animate(onPlay: (controller) => controller.repeat(reverse: true))
                   .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.1, 1.1), duration: 2000.ms),
-
+              
               SizedBox(width: 10.w),
               Text(
                 'ProjecTree',
@@ -154,9 +154,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               ),
             ],
           ),
-
+          
           SizedBox(height: 14.h),
-
+          
           Container(
             height: 3.h,
             decoration: BoxDecoration(
@@ -232,7 +232,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               )
                   .animate(onPlay: (controller) => controller.repeat(reverse: true))
                   .scale(begin: const Offset(1.0, 1.0), end: const Offset(1.05, 1.05), duration: 2000.ms),
-
+              
               SizedBox(width: 10.w),
               Text(
                 'ProjecTree',
@@ -244,9 +244,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               ),
             ],
           ),
-
+          
           SizedBox(height: 20.h),
-
+          
           Text(
             'Welcome to ProjecTree',
             style: TextStyle(
@@ -258,7 +258,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               .animate()
               .fadeIn(duration: 800.ms, delay: 300.ms)
               .slideY(begin: 0.3, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 10.h),
           Text(
             'Complete your profile to connect with other students, showcase your projects, and discover events on campus.',
@@ -271,9 +271,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               .animate()
               .fadeIn(duration: 800.ms, delay: 500.ms)
               .slideY(begin: 0.3, end: 0, duration: 800.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 28.h),
-
+          
           StepIndicator(
             currentStep: _currentStep,
             totalSteps: 5,
@@ -283,9 +283,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               .animate()
               .fadeIn(duration: 600.ms, delay: 700.ms)
               .slideX(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 28.h),
-
+          
           ProfileCompletionCard(
             completionPercentage: setupState.completionPercentage,
             currentStep: _currentStep,
@@ -293,9 +293,9 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
               .animate()
               .fadeIn(duration: 600.ms, delay: 900.ms)
               .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.0, 1.0), duration: 600.ms, curve: Curves.easeOutBack),
-
+          
           const Spacer(),
-
+          
           if (setupState.error != null) ...[
             Container(
               padding: EdgeInsets.all(10.w),
@@ -347,7 +347,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
 
   void _nextStep() {
     final setupNotifier = ref.read(profileSetupProvider.notifier);
-
+    
     if (!setupNotifier.validateStep(_currentStep)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -396,7 +396,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> with Ti
       if (success && mounted) {
         await ref.read(authProvider.notifier).refreshProfile();
         await Future.delayed(const Duration(milliseconds: 500));
-
+        
         if (mounted) {
           showDialog(
             context: context,
@@ -460,7 +460,7 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
   void initState() {
     super.initState();
     final setupState = ref.read(profileSetupProvider);
-
+    
     _firstNameController.text = setupState.personalInfo['first_name'] ?? '';
     _lastNameController.text = setupState.personalInfo['last_name'] ?? '';
     _usernameController.text = setupState.personalInfo['username'] ?? '';
@@ -471,7 +471,7 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final user = authState.user;
-
+    
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Form(
@@ -490,7 +490,7 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 .animate()
                 .fadeIn(duration: 600.ms)
                 .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 6.h),
             Text(
               'Let\'s start with the basics. This information will be displayed on your public profile.',
@@ -503,9 +503,9 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 .animate()
                 .fadeIn(duration: 600.ms, delay: 200.ms)
                 .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 28.h),
-
+            
             Row(
               children: [
                 Expanded(
@@ -539,9 +539,9 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 ),
               ],
             ),
-
+            
             SizedBox(height: 18.h),
-
+            
             CustomInputField(
               label: 'Username',
               placeholder: 'Choose a unique username',
@@ -558,9 +558,9 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 600.ms)
                 .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 18.h),
-
+            
             CustomInputField(
               label: 'Email',
               placeholder: 'Your email address',
@@ -570,7 +570,7 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 700.ms)
                 .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 3.h),
             Text(
               'Email cannot be changed',
@@ -579,9 +579,9 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 color: AppTheme.textGray,
               ),
             ),
-
+            
             SizedBox(height: 18.h),
-
+            
             CustomInputField(
               label: 'Location (Optional)',
               placeholder: 'City, Country',
@@ -590,9 +590,9 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 800.ms)
                 .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 36.h),
-
+            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -659,7 +659,7 @@ class _PersonalInfoStepState extends ConsumerState<_PersonalInfoStep> {
         'username': _usernameController.text.trim(),
         'location': _locationController.text.trim(),
       });
-
+      
       widget.onNext();
     }
   }
@@ -687,7 +687,7 @@ class _ProfilePhotoStep extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final setupState = ref.watch(profileSetupProvider);
-
+    
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
@@ -704,7 +704,7 @@ class _ProfilePhotoStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms)
               .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 6.h),
           Text(
             'Add a profile photo to help others recognize you. A clear, friendly headshot works best.',
@@ -717,9 +717,9 @@ class _ProfilePhotoStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms, delay: 200.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 36.h),
-
+          
           Center(
             child: Column(
               children: [
@@ -738,26 +738,26 @@ class _ProfilePhotoStep extends ConsumerWidget {
                       ),
                       child: setupState.profileImagePath != null
                           ? ClipRRect(
-                        borderRadius: BorderRadius.circular(67.r),
-                        child: setupState.profileImageFile != null
-                            ? Image.file(
-                          setupState.profileImageFile!,
-                          fit: BoxFit.cover,
-                        )
-                            : Image.network(
-                          setupState.profileImagePath!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _buildAvatarPlaceholder(setupState.avatarLetter);
-                          },
-                        ),
-                      )
+                              borderRadius: BorderRadius.circular(67.r),
+                              child: setupState.profileImageFile != null
+                                  ? Image.file(
+                                      setupState.profileImageFile!,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.network(
+                                      setupState.profileImagePath!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return _buildAvatarPlaceholder(setupState.avatarLetter);
+                                      },
+                                    ),
+                            )
                           : _buildAvatarPlaceholder(setupState.avatarLetter),
                     )
                         .animate()
                         .fadeIn(duration: 800.ms, delay: 400.ms)
                         .scale(begin: const Offset(0.8, 0.8), end: const Offset(1.0, 1.0), duration: 800.ms, curve: Curves.easeOutBack),
-
+                    
                     if (setupState.profileImagePath != null)
                       Positioned(
                         top: 0,
@@ -783,7 +783,7 @@ class _ProfilePhotoStep extends ConsumerWidget {
                           .animate()
                           .fadeIn(duration: 300.ms)
                           .scale(begin: const Offset(0.5, 0.5), end: const Offset(1.0, 1.0), duration: 300.ms, curve: Curves.easeOutBack),
-
+                    
                     if (setupState.isUploadingImage)
                       Positioned.fill(
                         child: Container(
@@ -802,15 +802,15 @@ class _ProfilePhotoStep extends ConsumerWidget {
                       ),
                   ],
                 ),
-
+                
                 SizedBox(height: 20.h),
-
+                
                 SizedBox(
                   width: 140.w,
                   height: 44.h,
                   child: OutlinedButton.icon(
-                    onPressed: setupState.isUploadingImage
-                        ? null
+                    onPressed: setupState.isUploadingImage 
+                        ? null 
                         : () => _showImagePicker(context, ref),
                     icon: Icon(
                       Icons.upload,
@@ -840,9 +840,9 @@ class _ProfilePhotoStep extends ConsumerWidget {
               ],
             ),
           ),
-
+          
           SizedBox(height: 36.h),
-
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -933,7 +933,7 @@ class _ProfilePhotoStep extends ConsumerWidget {
                 .animate()
                 .fadeIn(duration: 300.ms)
                 .scale(begin: const Offset(0.5, 0.5), end: const Offset(1.0, 1.0), duration: 300.ms),
-
+            
             SizedBox(height: 18.h),
             Text(
               'Select Photo',
@@ -946,7 +946,7 @@ class _ProfilePhotoStep extends ConsumerWidget {
                 .animate()
                 .fadeIn(duration: 400.ms, delay: 100.ms)
                 .slideY(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+            
             SizedBox(height: 20.h),
             Row(
               children: [
@@ -985,12 +985,12 @@ class _ProfilePhotoStep extends ConsumerWidget {
   }
 
   Widget _buildImageOption(
-      BuildContext context,
-      WidgetRef ref,
-      String label,
-      IconData icon,
-      ImageSource source,
-      ) {
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    IconData icon,
+    ImageSource source,
+  ) {
     return GestureDetector(
       onTap: () async {
         Navigator.pop(context);
@@ -1071,7 +1071,7 @@ class _InterestsStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final setupState = ref.watch(profileSetupProvider);
     final customInterestController = TextEditingController();
-
+    
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
@@ -1088,7 +1088,7 @@ class _InterestsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms)
               .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 6.h),
           Text(
             'Select interests that matter to you. This helps us connect you with relevant projects and people.',
@@ -1101,9 +1101,9 @@ class _InterestsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms, delay: 200.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 20.h),
-
+          
           Row(
             children: [
               Expanded(
@@ -1164,9 +1164,9 @@ class _InterestsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms, delay: 400.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 20.h),
-
+          
           if (setupState.selectedInterests.isNotEmpty) ...[
             Container(
               width: double.infinity,
@@ -1223,7 +1223,7 @@ class _InterestsStep extends ConsumerWidget {
                 .slideY(begin: 0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
             SizedBox(height: 20.h),
           ],
-
+          
           ..._interestCategories.asMap().entries.map((entry) {
             final index = entry.key;
             final category = entry.value;
@@ -1238,9 +1238,9 @@ class _InterestsStep extends ConsumerWidget {
                 .fadeIn(duration: 500.ms, delay: (800 + index * 200).ms)
                 .slideX(begin: index.isEven ? -0.3 : 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic);
           }).toList(),
-
+          
           SizedBox(height: 36.h),
-
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1296,12 +1296,12 @@ class _InterestsStep extends ConsumerWidget {
   }
 
   Widget _buildInterestCategory(
-      BuildContext context,
-      WidgetRef ref,
-      String title,
-      List<String> interests,
-      List<String> selectedInterests,
-      ) {
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    List<String> interests,
+    List<String> selectedInterests,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: 20.h),
       child: Column(
@@ -1386,7 +1386,7 @@ class _SkillsStep extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final setupState = ref.watch(profileSetupProvider);
     final customSkillController = TextEditingController();
-
+    
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
@@ -1403,7 +1403,7 @@ class _SkillsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms)
               .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 6.h),
           Text(
             'Add skills that showcase your expertise. This helps others understand your strengths and capabilities.',
@@ -1416,9 +1416,9 @@ class _SkillsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms, delay: 200.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 20.h),
-
+          
           Row(
             children: [
               Expanded(
@@ -1479,9 +1479,9 @@ class _SkillsStep extends ConsumerWidget {
               .animate()
               .fadeIn(duration: 600.ms, delay: 400.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 20.h),
-
+          
           if (setupState.selectedSkills.isNotEmpty) ...[
             Container(
               width: double.infinity,
@@ -1538,7 +1538,7 @@ class _SkillsStep extends ConsumerWidget {
                 .slideY(begin: 0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
             SizedBox(height: 20.h),
           ],
-
+          
           ..._skillCategories.asMap().entries.map((entry) {
             final index = entry.key;
             final category = entry.value;
@@ -1553,9 +1553,9 @@ class _SkillsStep extends ConsumerWidget {
                 .fadeIn(duration: 500.ms, delay: (800 + index * 200).ms)
                 .slideX(begin: index.isEven ? -0.3 : 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic);
           }).toList(),
-
+          
           SizedBox(height: 36.h),
-
+          
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1611,12 +1611,12 @@ class _SkillsStep extends ConsumerWidget {
   }
 
   Widget _buildSkillCategory(
-      BuildContext context,
-      WidgetRef ref,
-      String title,
-      List<String> skills,
-      List<String> selectedSkills,
-      ) {
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+    List<String> skills,
+    List<String> selectedSkills,
+  ) {
     return Container(
       margin: EdgeInsets.only(bottom: 20.h),
       child: Column(
@@ -1687,7 +1687,7 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
   void initState() {
     super.initState();
     final setupState = ref.read(profileSetupProvider);
-
+    
     _bioController.text = setupState.biography['bio'] ?? '';
     _websiteController.text = setupState.biography['website'] ?? '';
     _githubController.text = setupState.biography['github'] ?? '';
@@ -1698,7 +1698,7 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
   @override
   Widget build(BuildContext context) {
     final setupState = ref.watch(profileSetupProvider);
-
+    
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
@@ -1715,7 +1715,7 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 600.ms)
               .slideY(begin: -0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 6.h),
           Text(
             'Tell others about yourself and connect your social profiles to enhance your network.',
@@ -1728,9 +1728,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 600.ms, delay: 200.ms)
               .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 20.h),
-
+          
           // Bio Section with AI generation
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1747,16 +1747,16 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: setupState.isGeneratingBio
-                        ? null
+                    onTap: setupState.isGeneratingBio 
+                        ? null 
                         : () async {
-                      await ref.read(profileSetupProvider.notifier).generateAIBio();
-                      final updatedState = ref.read(profileSetupProvider);
-                      final generatedBio = updatedState.biography['bio'];
-                      if (generatedBio != null && generatedBio.isNotEmpty) {
-                        _bioController.text = generatedBio;
-                      }
-                    },
+                        await ref.read(profileSetupProvider.notifier).generateAIBio();
+                        final updatedState = ref.read(profileSetupProvider);
+                        final generatedBio = updatedState.biography['bio'];
+                        if (generatedBio != null && generatedBio.isNotEmpty) {
+                          _bioController.text = generatedBio;
+                        }
+                      },
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
                       decoration: BoxDecoration(
@@ -1842,9 +1842,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
                   .slideY(begin: 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
             ],
           ),
-
+          
           SizedBox(height: 20.h),
-
+          
           // Social Profiles Section
           Text(
             'Social Profiles (Optional)',
@@ -1857,9 +1857,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 500.ms, delay: 700.ms)
               .slideX(begin: -0.3, end: 0, duration: 500.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 14.h),
-
+          
           // Website
           CustomInputField(
             label: 'Personal Website',
@@ -1869,9 +1869,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 400.ms, delay: 800.ms)
               .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 14.h),
-
+          
           // GitHub
           CustomInputField(
             label: 'GitHub',
@@ -1881,9 +1881,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 400.ms, delay: 900.ms)
               .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 14.h),
-
+          
           // LinkedIn
           CustomInputField(
             label: 'LinkedIn',
@@ -1893,9 +1893,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 400.ms, delay: 1000.ms)
               .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 14.h),
-
+          
           // Twitter
           CustomInputField(
             label: 'Twitter',
@@ -1905,9 +1905,9 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
               .animate()
               .fadeIn(duration: 400.ms, delay: 1100.ms)
               .slideX(begin: -0.3, end: 0, duration: 400.ms, curve: Curves.easeOutCubic),
-
+          
           SizedBox(height: 36.h),
-
+          
           // Navigation Buttons
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1948,20 +1948,20 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
                     duration: const Duration(milliseconds: 200),
                     child: setupState.isLoading
                         ? SizedBox(
-                      width: 18.w,
-                      height: 18.h,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(AppTheme.darkBackground),
-                      ),
-                    )
+                            width: 18.w,
+                            height: 18.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(AppTheme.darkBackground),
+                            ),
+                          )
                         : Text(
-                      'Complete Profile',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                            'Complete Profile',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
               )
@@ -1989,7 +1989,7 @@ class _BiographyStepState extends ConsumerState<_BiographyStep> {
       'twitter': _twitterController.text.trim(),
       'linkedin': _linkedinController.text.trim(),
     });
-
+    
     // Complete profile
     widget.onComplete();
   }

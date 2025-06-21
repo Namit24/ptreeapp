@@ -47,11 +47,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     try {
       final users = await SupabaseService.searchUsers(query);
-
+      
       for (final user in users) {
         await ref.read(followProvider.notifier).checkFollowStatus(user['id']);
         ref.read(followProvider.notifier).updateFollowerCount(
-          user['id'],
+          user['id'], 
           user['followers_count'] ?? 0,
         );
       }
@@ -129,19 +129,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: AppTheme.textGray,
-                          size: 20.sp,
-                        ),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            searchResults = [];
-                            hasSearched = false;
-                          });
-                        },
-                      )
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: AppTheme.textGray,
+                                size: 20.sp,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  searchResults = [];
+                                  hasSearched = false;
+                                });
+                              },
+                            )
                           : null,
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
@@ -275,7 +275,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
             SizedBox(height: 12.h),
             Text(
-              hasSearched
+              hasSearched 
                   ? 'Try searching with different keywords'
                   : 'Enter a name or username to find students',
               style: GoogleFonts.poppins(
@@ -361,18 +361,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       borderRadius: BorderRadius.circular(26.r),
                       child: user['profile_image_url'] != null
                           ? CachedNetworkImage(
-                        imageUrl: user['profile_image_url'],
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => _buildAvatarPlaceholder(user),
-                        errorWidget: (context, url, error) => _buildAvatarPlaceholder(user),
-                      )
+                              imageUrl: user['profile_image_url'],
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => _buildAvatarPlaceholder(user),
+                              errorWidget: (context, url, error) => _buildAvatarPlaceholder(user),
+                            )
                           : _buildAvatarPlaceholder(user),
                     ),
                   ),
                 ),
-
+                
                 SizedBox(width: 16.w),
-
+                
                 // User Info
                 Expanded(
                   child: Column(
@@ -418,7 +418,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     ],
                   ),
                 ),
-
+                
                 // Follow Button
                 FollowButton(
                   userId: user['id'],
@@ -426,7 +426,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ],
             ),
-
+            
             // Bio
             if (user['bio']?.isNotEmpty == true) ...[
               SizedBox(height: 16.h),
@@ -441,7 +441,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-
+            
             // Stats
             SizedBox(height: 16.h),
             Row(
@@ -460,7 +460,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildAvatarPlaceholder(Map<String, dynamic> user) {
     final name = user['full_name'] ?? user['first_name'] ?? 'U';
     final letter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'U';
-
+    
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(

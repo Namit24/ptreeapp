@@ -6,14 +6,14 @@ import '../../../core/services/supabase_service.dart';
 import '../widgets/follow_button.dart';
 import '../providers/follow_provider.dart';
 
-class UsersScreen extends ConsumerStatefulWidget {
-  const UsersScreen({super.key});
+class UserScreen extends ConsumerStatefulWidget {
+  const UserScreen({super.key});
 
   @override
-  ConsumerState<UsersScreen> createState() => _UsersScreenState();
+  ConsumerState<UserScreen> createState() => _UserScreenState();
 }
 
-class _UsersScreenState extends ConsumerState<UsersScreen> {
+class _UserScreenState extends ConsumerState<UserScreen> {
   List<Map<String, dynamic>> users = [];
   bool isLoading = true;
   String? error;
@@ -32,18 +32,18 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       });
 
       final loadedUsers = await SupabaseService.getAllUsers();
-
+      
       // Check follow status for each user
       for (final user in loadedUsers) {
         await ref.read(followProvider.notifier).checkFollowStatus(user['id']);
-
+        
         // Update follower counts
         ref.read(followProvider.notifier).updateFollowerCount(
-          user['id'],
+          user['id'], 
           user['followers_count'] ?? 0,
         );
         ref.read(followProvider.notifier).updateFollowingCount(
-          user['id'],
+          user['id'], 
           user['following_count'] ?? 0,
         );
       }
@@ -216,20 +216,20 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 ),
                 child: user['profile_image_url'] != null
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(23.r),
-                  child: Image.network(
-                    user['profile_image_url'],
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return _buildAvatarPlaceholder(user['first_name'] ?? 'U');
-                    },
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(23.r),
+                        child: Image.network(
+                          user['profile_image_url'],
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildAvatarPlaceholder(user['first_name'] ?? 'U');
+                          },
+                        ),
+                      )
                     : _buildAvatarPlaceholder(user['first_name'] ?? 'U'),
               ),
-
+              
               SizedBox(width: 12.w),
-
+              
               // User Info
               Expanded(
                 child: Column(
@@ -274,7 +274,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   ],
                 ),
               ),
-
+              
               // Follow Button
               FollowButton(
                 userId: user['id'],
@@ -282,7 +282,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
             ],
           ),
-
+          
           // Bio
           if (user['bio']?.isNotEmpty == true) ...[
             SizedBox(height: 12.h),
@@ -297,9 +297,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-
+          
           // Interests and Skills
-          if ((user['interests'] as List?)?.isNotEmpty == true ||
+          if ((user['interests'] as List?)?.isNotEmpty == true || 
               (user['skills'] as List?)?.isNotEmpty == true) ...[
             SizedBox(height: 12.h),
             Wrap(
@@ -325,7 +325,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     ),
                   );
                 }).toList(),
-
+                
                 // Show first 2 skills
                 ...((user['skills'] as List?) ?? []).take(2).map((skill) {
                   return Container(
@@ -348,7 +348,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ],
             ),
           ],
-
+          
           // Stats
           SizedBox(height: 12.h),
           Row(

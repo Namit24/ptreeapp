@@ -17,54 +17,54 @@ class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>>
       // Try to get real data from Supabase first
       final projectsData = await SupabaseService.getProjects(limit: 10);
       final eventsData = await SupabaseService.getEvents(limit: 10);
-
+      
       final feedItems = <Map<String, dynamic>>[];
-
+      
       // Convert Supabase data to our models
       for (final projectData in projectsData) {
         try {
           final project = Project.fromJson(projectData);
           feedItems.add({
-            'type': 'project',
-            'data': project,
+            'type': 'project', 
+            'data': project, 
             'timestamp': project.createdAt
           });
         } catch (e) {
           print('Error parsing project: $e');
         }
       }
-
+      
       for (final eventData in eventsData) {
         try {
           final event = Event.fromJson(eventData);
           feedItems.add({
-            'type': 'event',
-            'data': event,
+            'type': 'event', 
+            'data': event, 
             'timestamp': event.createdAt
           });
         } catch (e) {
           print('Error parsing event: $e');
         }
       }
-
+      
       // If no real data, fall back to mock data
       if (feedItems.isEmpty) {
         print('No real data found, using mock data');
         final projects = _getMockProjects();
         final events = _getMockEvents();
-
+        
         for (final project in projects) {
           feedItems.add({'type': 'project', 'data': project, 'timestamp': project.createdAt});
         }
-
+        
         for (final event in events) {
           feedItems.add({'type': 'event', 'data': event, 'timestamp': event.createdAt});
         }
       }
-
+      
       // Sort by timestamp (newest first)
       feedItems.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
-
+      
       state = AsyncValue.data(feedItems);
       _currentPage = 1;
     } catch (error, stackTrace) {
@@ -75,11 +75,11 @@ class FeedNotifier extends StateNotifier<AsyncValue<List<Map<String, dynamic>>>>
 
   Future<void> loadMore() async {
     if (!_hasMore || state.isLoading) return;
-
+    
     try {
       _currentPage++;
       await Future.delayed(const Duration(seconds: 1));
-
+      
       // For now, just return empty to simulate no more data
       _hasMore = false;
     } catch (error) {

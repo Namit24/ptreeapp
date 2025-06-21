@@ -56,11 +56,22 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _createPost() async {
-    if (_contentController.text.trim().isEmpty && _selectedImage == null) {
+    final content = _contentController.text.trim();
+    
+    // Allow posting with just text, just image, or both
+    if (content.isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please add some content or an image'),
+          content: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.white),
+              SizedBox(width: 8.w),
+              Expanded(child: Text('Please add some content or select an image')),
+            ],
+          ),
           backgroundColor: AppTheme.accentRed,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
         ),
       );
       return;
@@ -72,23 +83,50 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
     try {
       final success = await ref.read(postsProvider.notifier).createPost(
-        content: _contentController.text.trim(),
+        content: content, // Can be empty if only image
         imageFile: _selectedImage,
       );
 
       if (success && mounted) {
+        // Show success message with different text based on content type
+        String successMessage;
+        if (content.isNotEmpty && _selectedImage != null) {
+          successMessage = 'Post with text and image created successfully!';
+        } else if (content.isNotEmpty) {
+          successMessage = 'Text post created successfully!';
+        } else {
+          successMessage = 'Image post created successfully!';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Post created successfully!'),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8.w),
+                Expanded(child: Text(successMessage)),
+              ],
+            ),
             backgroundColor: AppTheme.accentGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
           ),
         );
-        context.go('/home'); // Navigate back to home
+        context.go('/profile'); // Navigate to profile to see the new post
       } else if (mounted) {
+        final postsState = ref.read(postsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create post'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8.w),
+                Expanded(child: Text(postsState.error ?? 'Failed to create post')),
+              ],
+            ),
             backgroundColor: AppTheme.accentRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
           ),
         );
       }
@@ -97,8 +135,16 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create post'),
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8.w),
+                Expanded(child: Text('Failed to create post: ${e.toString()}')),
+              ],
+            ),
             backgroundColor: AppTheme.accentRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
           ),
         );
       }
@@ -142,21 +188,21 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             onPressed: _isLoading ? null : _createPost,
             child: _isLoading
                 ? SizedBox(
-              width: 20.w,
-              height: 20.h,
-              child: CircularProgressIndicator(
-                color: AppTheme.primaryYellow,
-                strokeWidth: 2,
-              ),
-            )
+                    width: 20.w,
+                    height: 20.h,
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryYellow,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : Text(
-              'Post',
-              style: GoogleFonts.poppins(
-                color: AppTheme.primaryYellow,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+                    'Post',
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.primaryYellow,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
           SizedBox(width: 8.w),
         ],
@@ -177,13 +223,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       : null,
                   child: profile?['profile_image_url'] == null
                       ? Text(
-                    (profile?['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
-                    style: GoogleFonts.poppins(
-                      color: AppTheme.primaryYellow,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
+                          (profile?['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            color: AppTheme.primaryYellow,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        )
                       : null,
                 ),
                 SizedBox(width: 12.w),
@@ -237,7 +283,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   height: 1.4,
                 ),
                 decoration: InputDecoration(
-                  hintText: "What's on your mind?",
+                  hintText: _selectedImage != null 
+                      ? "Add a caption (optional)..." 
+                      : "What's on your mind?",
                   hintStyle: GoogleFonts.poppins(
                     color: AppTheme.textGray,
                     fontSize: 16.sp,

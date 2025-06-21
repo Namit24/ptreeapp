@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../providers/feed_provider.dart';
+import '../providers/feed_posts_provider.dart';
 import '../widgets/project_card.dart';
 import '../widgets/event_card.dart';
 import '../widgets/spotlight_section.dart';
+import '../../posts/widgets/post_card.dart';
+import '../../posts/widgets/post_search_delegate.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -100,6 +104,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
               const Spacer(),
               // Modern Action Buttons
+              _buildModernActionButton(Icons.search, () {
+                final feedPostsState = ref.read(feedPostsProvider);
+                if (feedPostsState.posts.isNotEmpty) {
+                  showSearch(
+                    context: context,
+                    delegate: PostSearchDelegate(feedPostsState.posts),
+                  );
+                }
+              }),
+              SizedBox(width: 8.w),
               _buildModernActionButton(Icons.notifications_none, () {}),
               SizedBox(width: 8.w),
               _buildModernActionButton(Icons.chat_bubble_outline, () {}),
@@ -108,7 +122,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(feedProvider.notifier).refresh(),
+        onRefresh: () async {
+          await ref.read(feedPostsProvider.notifier).refresh();
+        },
         color: AppTheme.primaryYellow,
         child: CustomScrollView(
           controller: _scrollController,
@@ -120,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: const SpotlightSection(),
               ).animate().fadeIn(duration: 600.ms),
             ),
-
+            
             // Recent Projects Horizontal Scroll
             SliverToBoxAdapter(
               child: _buildHorizontalSection(
@@ -129,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildProjectsHorizontal(),
               ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
             ),
-
+            
             // Upcoming Events Horizontal Scroll
             SliverToBoxAdapter(
               child: _buildHorizontalSection(
@@ -138,7 +154,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildEventsHorizontal(),
               ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
             ),
-
+            
             // Feed Header
             SliverToBoxAdapter(
               child: Padding(
@@ -153,55 +169,123 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ).animate().fadeIn(duration: 600.ms, delay: 600.ms),
             ),
-
+            
             // Main Feed
-            feedState.when(
-              data: (items) => SliverList(
-                delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                    if (index >= items.length) {
-                      return Container(
-                        padding: EdgeInsets.all(20.w),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primaryYellow,
+            Consumer(
+              builder: (context, ref, child) {
+                final feedPostsState = ref.watch(feedPostsProvider);
+                
+                // Load feed posts when screen loads
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  final authState = ref.read(authProvider);
+                  if (authState.user != null && feedPostsState.posts.isEmpty && !feedPostsState.isLoading) {
+                    ref.read(feedPostsProvider.notifier).loadFeedPosts();
+                  }
+                });
+                
+                if (feedPostsState.isLoading) {
+                  return SliverFillRemaining(
+                    child: _buildLoadingState(),
+                  );
+                }
+                
+                if (feedPostsState.error != null) {
+                  return SliverFillRemaining(
+                    child: _buildErrorState(feedPostsState.error),
+                  );
+                }
+                
+                if (feedPostsState.posts.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: Container(
+                      padding: EdgeInsets.all(24.w),
+                      margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      decoration: BoxDecoration(
+                        color: AppTheme.glassBackground,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: AppTheme.glassBorder),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.people_outline,
+                            size: 48.sp,
+                            color: AppTheme.neutralGray,
                           ),
-                        ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            'No posts in your feed yet',
+                            style: GoogleFonts.inter(
+                              color: AppTheme.primaryBlack,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'Follow other users to see their posts here!',
+                            style: GoogleFonts.inter(
+                              color: AppTheme.neutralGray,
+                              fontSize: 14.sp,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+                
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final post = feedPostsState.posts[index];
+                      
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 12.h, left: 16.w, right: 16.w),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppTheme.glassBackground,
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(color: AppTheme.glassBorder),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.shadowColor,
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: PostCard(
+                            post: post,
+                            isOwner: false, // These are other users' posts
+                          ),
+                        ).animate().fadeIn(
+                          duration: 400.ms,
+                          delay: Duration(milliseconds: index * 100),
+                        ).slideY(begin: 0.1),
                       );
-                    }
-
-                    final item = items[index];
-                    Widget card;
-                    if (item['type'] == 'project') {
-                      card = ProjectCard(project: item['data']);
-                    } else {
-                      card = EventCard(event: item['data']);
-                    }
-
-                    return Padding(
-                      padding: EdgeInsets.only(bottom: 12.h), // Consistent spacing
-                      child: card.animate().fadeIn(
-                        duration: 400.ms,
-                        delay: Duration(milliseconds: index * 100),
-                      ).slideY(begin: 0.1),
-                    );
-                  },
-                  childCount: items.length,
-                ),
-              ),
-              loading: () => SliverFillRemaining(
-                child: _buildLoadingState(),
-              ),
-              error: (error, stack) => SliverFillRemaining(
-                child: _buildErrorState(error),
-              ),
+                    },
+                    childCount: feedPostsState.posts.length,
+                  ),
+                );
+              },
             ),
-
+            
             // Bottom padding for navigation - IMPROVED
             SliverToBoxAdapter(
               child: SizedBox(height: 80.h), // Reduced from 100.h
             ),
           ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/create-post'),
+        backgroundColor: AppTheme.primaryYellow,
+        child: Icon(
+          Icons.add,
+          color: AppTheme.primaryBlack,
+          size: 28.sp,
         ),
       ),
     );

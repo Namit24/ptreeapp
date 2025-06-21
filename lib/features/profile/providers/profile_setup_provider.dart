@@ -62,7 +62,7 @@ class ProfileSetupState {
     int total = 5;
 
     // Personal info (required fields)
-    if (personalInfo['first_name']?.isNotEmpty == true &&
+    if (personalInfo['first_name']?.isNotEmpty == true && 
         personalInfo['last_name']?.isNotEmpty == true &&
         personalInfo['username']?.isNotEmpty == true) {
       completed++;
@@ -111,7 +111,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
   void _initializeFromExistingProfile() {
     final authState = ref.read(authProvider);
     final profile = authState.profile;
-
+    
     if (profile != null) {
       // Pre-populate with existing data
       state = state.copyWith(
@@ -142,7 +142,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
   Future<void> pickImage(ImageSource source) async {
     try {
       state = state.copyWith(isUploadingImage: true, error: null);
-
+      
       final picker = ImagePicker();
       final pickedFile = await picker.pickImage(
         source: source,
@@ -153,7 +153,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
 
       if (pickedFile != null) {
         final file = File(pickedFile.path);
-
+        
         // Validate file size (5MB max)
         final fileSize = await file.length();
         if (fileSize > 5 * 1024 * 1024) {
@@ -219,7 +219,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
   Future<String?> generateAIBio() async {
     try {
       state = state.copyWith(isGeneratingBio: true, error: null);
-
+      
       // Validate required data
       if (state.personalInfo['first_name']?.isEmpty ?? true) {
         state = state.copyWith(
@@ -238,7 +238,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
       }
 
       print('🤖 Generating AI bio...');
-
+      
       final generatedBio = await AIService.generateBio(
         firstName: state.personalInfo['first_name'] ?? '',
         lastName: state.personalInfo['last_name'] ?? '',
@@ -246,13 +246,13 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
         skills: state.selectedSkills,
         location: state.personalInfo['location'],
       );
-
+      
       final updatedBio = {...state.biography, 'bio': generatedBio};
       state = state.copyWith(
-        biography: updatedBio,
+        biography: updatedBio, 
         isGeneratingBio: false,
       );
-
+      
       print('✅ AI bio generated successfully');
       return generatedBio;
     } catch (e) {
@@ -270,8 +270,8 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
     switch (step) {
       case 0: // Personal Info
         return state.personalInfo['first_name']?.isNotEmpty == true &&
-            state.personalInfo['last_name']?.isNotEmpty == true &&
-            state.personalInfo['username']?.isNotEmpty == true;
+               state.personalInfo['last_name']?.isNotEmpty == true &&
+               state.personalInfo['username']?.isNotEmpty == true;
       case 1: // Profile Photo (optional)
         return true;
       case 2: // Interests (at least 1)
@@ -301,7 +301,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
       print('🚀 Completing profile for user: ${user.email}');
 
       String? profileImageUrl;
-
+      
       // Upload profile image if exists
       if (state.profileImageFile != null) {
         try {
@@ -333,7 +333,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
       }
 
       print('💾 Updating profile in database...');
-
+      
       // Update profile in Supabase
       await SupabaseService.updateProfile(
         userId: user.id,

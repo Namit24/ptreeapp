@@ -149,7 +149,7 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
             // Exchange code for session
             await Supabase.instance.client.auth.exchangeCodeForSession(code);
             print('✅ Successfully exchanged code for session');
-
+            
             // Wait a moment for auth state to update, then navigate
             await Future.delayed(const Duration(milliseconds: 500));
             if (mounted) {
@@ -268,5 +268,3 @@ class _ProjecTreeAppState extends ConsumerState<ProjecTreeApp> {
     super.dispose();
   }
 }
-
-//https://v0.dev/chat/fork-of-projec-tree-architecture-1dlklGQeNbb

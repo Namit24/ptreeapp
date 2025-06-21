@@ -130,7 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/users',
-        builder: (context, state) => const UsersScreen(),
+        builder: (context, state) => const UserScreen(),
       ),
       GoRoute(
         path: '/create-post',

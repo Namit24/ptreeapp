@@ -65,12 +65,12 @@ class _FollowButtonState extends ConsumerState<FollowButton> with SingleTickerPr
         height: 28.h, // Reduced from 32.h
         padding: EdgeInsets.symmetric(horizontal: 12.w), // Reduced from 14.w
         decoration: BoxDecoration(
-          color: currentlyFollowing
-              ? AppTheme.inputBackground
+          color: currentlyFollowing 
+              ? AppTheme.inputBackground 
               : AppTheme.primaryYellow,
           borderRadius: BorderRadius.circular(6.r),
-          border: currentlyFollowing
-              ? Border.all(color: AppTheme.inputBorder)
+          border: currentlyFollowing 
+              ? Border.all(color: AppTheme.inputBorder) 
               : null,
           boxShadow: !currentlyFollowing && !_isPressed ? [
             BoxShadow(
@@ -91,44 +91,44 @@ class _FollowButtonState extends ConsumerState<FollowButton> with SingleTickerPr
             },
             child: isLoading
                 ? SizedBox(
-              key: const ValueKey('loading'),
-              width: 12.w, // Reduced from 16.w
-              height: 12.h, // Reduced from 16.h
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5, // Reduced from 2
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  currentlyFollowing ? AppTheme.textWhite : AppTheme.darkBackground,
-                ),
-              ),
-            )
+                    key: const ValueKey('loading'),
+                    width: 12.w, // Reduced from 16.w
+                    height: 12.h, // Reduced from 16.h
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5, // Reduced from 2
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        currentlyFollowing ? AppTheme.textWhite : AppTheme.darkBackground,
+                      ),
+                    ),
+                  )
                 : Row(
-              key: ValueKey(currentlyFollowing ? 'following' : 'follow'),
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  currentlyFollowing ? Icons.check : Icons.add,
-                  size: 12.sp, // Reduced from 14.sp
-                  color: currentlyFollowing
-                      ? AppTheme.textWhite
-                      : AppTheme.darkBackground,
-                )
-                    .animate(target: currentlyFollowing ? 1 : 0)
-                    .rotate(begin: 0, end: 0.5, duration: 300.ms, curve: Curves.easeInOut),
-
-                SizedBox(width: 3.w), // Reduced from 4.w
-
-                Text(
-                  currentlyFollowing ? 'Following' : 'Follow',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11.sp, // Reduced from 12.sp
-                    fontWeight: FontWeight.w600,
-                    color: currentlyFollowing
-                        ? AppTheme.textWhite
-                        : AppTheme.darkBackground,
+                    key: ValueKey(currentlyFollowing ? 'following' : 'follow'),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        currentlyFollowing ? Icons.check : Icons.add,
+                        size: 12.sp, // Reduced from 14.sp
+                        color: currentlyFollowing 
+                            ? AppTheme.textWhite 
+                            : AppTheme.darkBackground,
+                      )
+                          .animate(target: currentlyFollowing ? 1 : 0)
+                          .rotate(begin: 0, end: 0.5, duration: 300.ms, curve: Curves.easeInOut),
+                      
+                      SizedBox(width: 3.w), // Reduced from 4.w
+                      
+                      Text(
+                        currentlyFollowing ? 'Following' : 'Follow',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11.sp, // Reduced from 12.sp
+                          fontWeight: FontWeight.w600,
+                          color: currentlyFollowing 
+                              ? AppTheme.textWhite 
+                              : AppTheme.darkBackground,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       )

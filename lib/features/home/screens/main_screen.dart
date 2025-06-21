@@ -51,7 +51,6 @@ class _MainScreenState extends ConsumerState<MainScreen>
         vsync: this,
       ),
     );
-    // Animate the initial selected tab
     _iconControllers[0].forward();
   }
 
@@ -66,14 +65,11 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   void _onTabTapped(int index) {
     if (_currentIndex != index) {
-      // Animate out current tab
       _iconControllers[_currentIndex].reverse();
-      // Animate in new tab
       _iconControllers[index].forward();
 
       setState(() => _currentIndex = index);
 
-      // Smooth page transition
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 300),
@@ -96,7 +92,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         },
         children: _screens,
       ),
-      // FIXED: Compact bottom navigation bar
+      // COMPLETELY SAFE BOTTOM NAVIGATION - NO RESPONSIVE SIZING
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -122,18 +118,23 @@ class _MainScreenState extends ConsumerState<MainScreen>
           ],
         ),
         child: SafeArea(
-          child: Container(
-            height: 60.h, // REDUCED from 70.h
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h), // REDUCED padding
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: _navItems.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final isSelected = _currentIndex == index;
+          child: SizedBox(
+            height: 80, // FIXED: Use fixed double, not .h
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // FIXED: Use fixed EdgeInsets
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: _navItems.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
+                  final isSelected = _currentIndex == index;
 
-                return _buildNavItem(item, index, isSelected);
-              }).toList(),
+                  return Expanded( // FIXED: Use Expanded instead of Flexible
+                    child: _buildNavItem(item, index, isSelected),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ),
@@ -150,18 +151,16 @@ class _MainScreenState extends ConsumerState<MainScreen>
           final animationValue = _iconControllers[index].value;
 
           return Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 12.w, // REDUCED from 16.w
-              vertical: 6.h,    // REDUCED from 8.h
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // FIXED: Use fixed EdgeInsets
             decoration: BoxDecoration(
               color: isSelected
                   ? AppTheme.primaryYellow.withOpacity(0.15)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(16.r), // REDUCED from 20.r
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Special handling for create button
                 if (index == 2)
@@ -171,25 +170,31 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     scale: 1.0 + (animationValue * 0.1),
                     child: Icon(
                       isSelected ? item.activeIcon : item.inactiveIcon,
-                      size: 22.sp, // REDUCED from 24.sp
+                      size: 24, // FIXED: Use fixed double, not .sp
                       color: isSelected
                           ? AppTheme.primaryYellow
                           : AppTheme.textGray,
                     ),
                   ),
 
-                SizedBox(height: 2.h), // REDUCED from 4.h
+                const SizedBox(height: 4), // FIXED: Use fixed SizedBox
 
+                // COMPLETELY SAFE TEXT STYLE - NO RESPONSIVE SIZING
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: GoogleFonts.poppins(
-                    fontSize: isSelected ? 10.sp : 9.sp, // REDUCED font sizes
+                    fontSize: isSelected ? 12.0 : 11.0, // FIXED: Use fixed double values
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: isSelected
                         ? AppTheme.primaryYellow
                         : AppTheme.textGray,
                   ),
-                  child: Text(item.label),
+                  child: Text(
+                    item.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -205,8 +210,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Widget _buildCreateButton(bool isSelected, double animationValue) {
     return Container(
-      width: 28.w, // REDUCED from 32.w
-      height: 28.h, // REDUCED from 32.h
+      width: 32, // FIXED: Use fixed double, not .w
+      height: 32, // FIXED: Use fixed double, not .h
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -216,7 +221,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14.r), // REDUCED from 16.r
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryYellow.withOpacity(0.4),
@@ -230,7 +235,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         child: Icon(
           Icons.add_rounded,
           color: AppTheme.darkBackground,
-          size: 18.sp, // REDUCED from 20.sp
+          size: 20, // FIXED: Use fixed double, not .sp
         ),
       ),
     );

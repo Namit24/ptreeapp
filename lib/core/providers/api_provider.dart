@@ -6,7 +6,7 @@ import '../services/api_service.dart';
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio();
   const storage = FlutterSecureStorage();
-
+  
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
       final token = await storage.read(key: 'auth_token');
@@ -16,7 +16,7 @@ final dioProvider = Provider<Dio>((ref) {
       handler.next(options);
     },
   ));
-
+  
   return dio;
 });
 
