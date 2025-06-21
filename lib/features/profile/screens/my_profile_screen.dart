@@ -9,6 +9,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../providers/follow_provider.dart';
+import '../../posts/providers/posts_provider.dart';
+import '../../posts/widgets/post_card.dart';
+import '../../posts/screens/create_post_screen.dart';
 
 class MyProfileScreen extends ConsumerStatefulWidget {
   const MyProfileScreen({super.key});
@@ -332,6 +335,142 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> with TickerPr
                 ),
               ],
 
+              // Create Post Button
+              SizedBox(height: 24.h),
+              _buildModernButton(
+                'Create Post',
+                onPressed: () => context.push('/create-post'),
+                isPrimary: true,
+                icon: Icons.add_rounded,
+              ).animate(delay: const Duration(milliseconds: 1600)).fadeIn().slideY(begin: 0.3),
+
+              // Posts Section
+              SizedBox(height: 24.h),
+              Text(
+                'My Posts',
+                style: GoogleFonts.poppins(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textWhite,
+                ),
+              ).animate(delay: const Duration(milliseconds: 1700)).fadeIn().slideX(begin: -0.3),
+
+              SizedBox(height: 12.h),
+
+              // Posts List
+              Consumer(
+                builder: (context, ref, child) {
+                  final postsState = ref.watch(postsProvider);
+
+                  // Load posts when screen loads
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (authState.user != null && postsState.posts.isEmpty && !postsState.isLoading) {
+                      ref.read(postsProvider.notifier).getUserPosts(authState.user!.id);
+                    }
+                  });
+
+                  if (postsState.isLoading) {
+                    return Center(
+                      child: CircularProgressIndicator(color: AppTheme.primaryYellow),
+                    );
+                  }
+
+                  if (postsState.posts.isEmpty) {
+                    return Container(
+                      padding: EdgeInsets.all(24.w),
+                      decoration: BoxDecoration(
+                        color: AppTheme.darkerBackground,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.post_add_rounded,
+                            size: 48.sp,
+                            color: AppTheme.textGray,
+                          ),
+                          SizedBox(height: 12.h),
+                          Text(
+                            'No posts yet',
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.textGray,
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'Share your first post with the community!',
+                            style: GoogleFonts.poppins(
+                              color: AppTheme.textGray,
+                              fontSize: 14.sp,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ).animate(delay: const Duration(milliseconds: 1800)).fadeIn().scale(begin: const Offset(0.9, 0.9));
+                  }
+
+                  return Column(
+                    children: postsState.posts.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final post = entry.value;
+
+                      return PostCard(
+                        post: post,
+                        isOwner: true,
+                        onEdit: () {
+                          // TODO: Navigate to edit post screen
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Edit post functionality coming soon!')),
+                          );
+                        },
+                        onDelete: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: AppTheme.darkerBackground,
+                              title: Text(
+                                'Delete Post',
+                                style: GoogleFonts.poppins(color: AppTheme.textWhite),
+                              ),
+                              content: Text(
+                                'Are you sure you want to delete this post?',
+                                style: GoogleFonts.poppins(color: AppTheme.textGray),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: Text(
+                                    'Cancel',
+                                    style: GoogleFonts.poppins(color: AppTheme.textGray),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: Text(
+                                    'Delete',
+                                    style: GoogleFonts.poppins(color: AppTheme.accentRed),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirmed == true) {
+                            await ref.read(postsProvider.notifier).deletePost(post.id);
+                          }
+                        },
+                      ).animate(delay: Duration(milliseconds: 1800 + (index * 100)))
+                          .fadeIn()
+                          .slideY(begin: 0.3);
+                    }).toList(),
+                  );
+                },
+              ),
+
               SizedBox(height: 40.h),
 
               // Modern Logout Button
@@ -426,17 +565,17 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> with TickerPr
               },
               onTapCancel: () => _socialController.reverse(),
               child: Container(
-                width: 32.w,
-                height: 32.h,
+                width: 36.w,
+                height: 36.h,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10.r),
+                  borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(color: color.withOpacity(0.3)),
                 ),
                 child: Icon(
                   icon,
                   color: color,
-                  size: 18.sp,
+                  size: 20.sp,
                 ),
               ),
             ),

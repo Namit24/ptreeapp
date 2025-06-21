@@ -6,7 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import 'home_screen.dart';
 import '../../search/screens/search_screen.dart';
-import '../../projects/screens/create_project_screen.dart';
+import '../../posts/screens/create_post_screen.dart';
 import '../../messages/screens/messages_screen.dart';
 import '../../profile/screens/my_profile_screen.dart';
 
@@ -26,7 +26,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
   final List<Widget> _screens = [
     const HomeScreen(),
     const SearchScreen(),
-    const CreateProjectScreen(),
+    const CreatePostScreen(),
     const MessagesScreen(),
     const MyProfileScreen(),
   ];
@@ -95,7 +95,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         },
         children: _screens,
       ),
-      // MODERN DARK NAVBAR with smooth animations
+      // FIXED: Modern dark navbar with proper sizing
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -122,8 +122,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
         ),
         child: SafeArea(
           child: Container(
-            height: 70.h,
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            height: 60.h, // FIXED: Reduced height to prevent overflow
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h), // FIXED: Reduced padding
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: _navItems.asMap().entries.map((entry) {
@@ -150,14 +150,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
           return Container(
             padding: EdgeInsets.symmetric(
-              horizontal: 16.w,
-              vertical: 8.h,
+              horizontal: 12.w, // FIXED: Reduced padding
+              vertical: 6.h,    // FIXED: Reduced padding
             ),
             decoration: BoxDecoration(
               color: isSelected
                   ? AppTheme.primaryYellow.withOpacity(0.15)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(20.r),
+              borderRadius: BorderRadius.circular(16.r), // FIXED: Smaller radius
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -170,19 +170,19 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     scale: 1.0 + (animationValue * 0.1),
                     child: Icon(
                       isSelected ? item.activeIcon : item.inactiveIcon,
-                      size: 24.sp,
+                      size: 22.sp, // FIXED: Smaller icon size
                       color: isSelected
                           ? AppTheme.primaryYellow
                           : AppTheme.textGray,
                     ),
                   ),
 
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h), // FIXED: Smaller spacing
 
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: GoogleFonts.poppins(
-                    fontSize: isSelected ? 11.sp : 10.sp,
+                    fontSize: isSelected ? 10.sp : 9.sp, // FIXED: Smaller font
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: isSelected
                         ? AppTheme.primaryYellow
@@ -204,8 +204,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Widget _buildCreateButton(bool isSelected, double animationValue) {
     return Container(
-      width: 32.w,
-      height: 32.h,
+      width: 28.w, // FIXED: Smaller size
+      height: 28.h, // FIXED: Smaller size
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -215,7 +215,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16.r),
+        borderRadius: BorderRadius.circular(14.r), // FIXED: Smaller radius
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryYellow.withOpacity(0.4),
@@ -229,7 +229,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         child: Icon(
           Icons.add_rounded,
           color: AppTheme.darkBackground,
-          size: 20.sp,
+          size: 18.sp, // FIXED: Smaller icon
         ),
       ),
     );
