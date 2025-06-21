@@ -215,8 +215,8 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
     state = state.copyWith(biography: {...state.biography, ...bio});
   }
 
-  // ENHANCED: Generate AI bio using Gemini
-  Future<void> generateAIBio() async {
+  // Generate AI bio and return the result
+  Future<String?> generateAIBio() async {
     try {
       state = state.copyWith(isGeneratingBio: true, error: null);
 
@@ -226,7 +226,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
           isGeneratingBio: false,
           error: 'Please fill in your name first',
         );
-        return;
+        return null;
       }
 
       if (state.selectedInterests.isEmpty && state.selectedSkills.isEmpty) {
@@ -234,7 +234,7 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
           isGeneratingBio: false,
           error: 'Please add some interests or skills first',
         );
-        return;
+        return null;
       }
 
       print('🤖 Generating AI bio...');
@@ -254,12 +254,14 @@ class ProfileSetupNotifier extends StateNotifier<ProfileSetupState> {
       );
 
       print('✅ AI bio generated successfully');
+      return generatedBio;
     } catch (e) {
       print('❌ Error generating AI bio: $e');
       state = state.copyWith(
         isGeneratingBio: false,
         error: 'Failed to generate bio. Please try again or write one manually.',
       );
+      return null;
     }
   }
 

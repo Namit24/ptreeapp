@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../providers/follow_provider.dart';
@@ -14,17 +17,34 @@ class MyProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<MyProfileScreen> createState() => _MyProfileScreenState();
 }
 
-class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
+class _MyProfileScreenState extends ConsumerState<MyProfileScreen> with TickerProviderStateMixin {
+  late AnimationController _buttonController;
+  late AnimationController _socialController;
+
   @override
   void initState() {
     super.initState();
+    _buttonController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _socialController = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      vsync: this,
+    );
     _loadProfileData();
+  }
+
+  @override
+  void dispose() {
+    _buttonController.dispose();
+    _socialController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfileData() async {
     final authState = ref.read(authProvider);
     if (authState.user != null) {
-      // Load current user's follow counts
       await ref.read(followProvider.notifier).loadUserCounts(authState.user!.id);
     }
   }
@@ -43,7 +63,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       return Scaffold(
         backgroundColor: AppTheme.darkBackground,
         body: Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryYellow),
+          child: CircularProgressIndicator(color: AppTheme.primaryYellow)
+              .animate(onPlay: (controller) => controller.repeat())
+              .rotate(duration: const Duration(seconds: 1)),
         ),
       );
     }
@@ -57,20 +79,17 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
             children: [
               Text(
                 'Please log in to view your profile',
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   color: AppTheme.textWhite,
                   fontSize: 16.sp,
                 ),
-              ),
+              ).animate().fadeIn().slideY(begin: 0.3),
               SizedBox(height: 20.h),
-              ElevatedButton(
+              _buildModernButton(
+                'Log In',
                 onPressed: () => context.go('/login'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryYellow,
-                  foregroundColor: AppTheme.darkBackground,
-                ),
-                child: Text('Log In'),
-              ),
+                isPrimary: true,
+              ).animate(delay: const Duration(milliseconds: 200)).fadeIn().slideY(begin: 0.3),
             ],
           ),
         ),
@@ -80,7 +99,6 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final profile = authState.profile;
     final userId = authState.user!.id;
 
-    // Get real-time counts from follow provider
     final followerCount = followState.followerCounts[userId] ?? profile?['followers_count'] ?? 0;
     final followingCount = followState.followingCounts[userId] ?? profile?['following_count'] ?? 0;
 
@@ -91,24 +109,12 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         elevation: 0,
         title: Text(
           'Profile',
-          style: TextStyle(
+          style: GoogleFonts.poppins(
             color: AppTheme.textWhite,
             fontSize: 18.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit, color: AppTheme.primaryYellow),
-            onPressed: () => context.push('/edit-profile'),
-          ),
-          IconButton(
-            icon: Icon(Icons.settings, color: AppTheme.textWhite),
-            onPressed: () {
-              // Show settings menu
-            },
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshProfile,
@@ -116,43 +122,56 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
         backgroundColor: AppTheme.darkerBackground,
         child: SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.all(16.w),
+          padding: EdgeInsets.all(20.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Profile Header
               Row(
                 children: [
-                  // Profile Image
+                  // Modern Profile Image
                   Container(
-                    width: 80.w,
-                    height: 80.h,
+                    width: 100.w,
+                    height: 100.h,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(40.r),
-                      border: Border.all(color: AppTheme.primaryYellow, width: 3),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(37.r),
-                      child: profile?['profile_image_url'] != null
-                          ? CachedNetworkImage(
-                        imageUrl: profile!['profile_image_url'],
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: AppTheme.primaryYellow.withOpacity(0.2),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              color: AppTheme.primaryYellow,
-                              strokeWidth: 2,
-                            ),
-                          ),
+                      borderRadius: BorderRadius.circular(50.r),
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryYellow,
+                          AppTheme.primaryYellow.withOpacity(0.8),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryYellow.withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
                         ),
-                        errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
-                      )
-                          : _buildAvatarPlaceholder(),
+                      ],
                     ),
-                  ),
+                    child: Container(
+                      margin: EdgeInsets.all(3.w),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(47.r),
+                        color: AppTheme.darkBackground,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(44.r),
+                        child: profile?['profile_image_url'] != null
+                            ? CachedNetworkImage(
+                          imageUrl: profile!['profile_image_url'],
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => _buildAvatarPlaceholder(),
+                          errorWidget: (context, url, error) => _buildAvatarPlaceholder(),
+                        )
+                            : _buildAvatarPlaceholder(),
+                      ),
+                    ),
+                  ).animate().scale(delay: const Duration(milliseconds: 100)),
 
-                  SizedBox(width: 20.w),
+                  SizedBox(width: 24.w),
 
                   // Profile Info
                   Expanded(
@@ -161,39 +180,50 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       children: [
                         Text(
                           profile?['full_name'] ?? 'Your Name',
-                          style: TextStyle(
-                            fontSize: 20.sp,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22.sp,
                             fontWeight: FontWeight.w700,
                             color: AppTheme.textWhite,
                           ),
-                        ),
+                        ).animate().fadeIn().slideX(begin: 0.3),
                         SizedBox(height: 4.h),
                         Text(
                           '@${profile?['username'] ?? 'username'}',
-                          style: TextStyle(
+                          style: GoogleFonts.poppins(
                             fontSize: 16.sp,
                             color: AppTheme.primaryYellow,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ),
+                        ).animate(delay: const Duration(milliseconds: 100)).fadeIn().slideX(begin: 0.3),
+
+                        // SOCIAL HANDLES RIGHT BELOW USERNAME
+                        if (_hasSocialHandles(profile)) ...[
+                          SizedBox(height: 8.h),
+                          _buildCompactSocialHandles(profile)
+                              .animate(delay: const Duration(milliseconds: 200))
+                              .fadeIn()
+                              .slideX(begin: 0.3),
+                        ],
+
                         if (profile?['location']?.isNotEmpty == true) ...[
-                          SizedBox(height: 4.h),
+                          SizedBox(height: 8.h),
                           Row(
                             children: [
                               Icon(
-                                Icons.location_on,
+                                Icons.location_on_rounded,
                                 size: 16.sp,
                                 color: AppTheme.textGray,
                               ),
                               SizedBox(width: 4.w),
                               Text(
                                 profile!['location'],
-                                style: TextStyle(
+                                style: GoogleFonts.poppins(
                                   fontSize: 14.sp,
                                   color: AppTheme.textGray,
                                 ),
                               ),
                             ],
-                          ),
+                          ).animate(delay: const Duration(milliseconds: 300)).fadeIn().slideX(begin: 0.3),
                         ],
                       ],
                     ),
@@ -201,170 +231,230 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                 ],
               ),
 
-              SizedBox(height: 20.h),
+              SizedBox(height: 24.h),
 
-              // Edit Profile Button
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: () => context.push('/edit-profile'),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppTheme.primaryYellow),
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                  ),
-                  child: Text(
-                    'Edit Profile',
-                    style: TextStyle(
-                      color: AppTheme.primaryYellow,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+              // Modern Edit Profile Button
+              _buildModernButton(
+                'Edit Profile',
+                onPressed: () => context.push('/edit-profile'),
+                isPrimary: false,
+                icon: Icons.edit_rounded,
+              ).animate(delay: const Duration(milliseconds: 400)).fadeIn().slideY(begin: 0.2),
 
-              SizedBox(height: 20.h),
+              SizedBox(height: 24.h),
 
-              // Stats - Show real-time counts
+              // Stats
               Row(
                 children: [
-                  _buildStatItem('Followers', followerCount),
-                  SizedBox(width: 32.w),
-                  _buildStatItem('Following', followingCount),
+                  _buildStatItem('Followers', followerCount)
+                      .animate(delay: const Duration(milliseconds: 500))
+                      .fadeIn()
+                      .slideY(begin: 0.2),
+                  SizedBox(width: 40.w),
+                  _buildStatItem('Following', followingCount)
+                      .animate(delay: const Duration(milliseconds: 600))
+                      .fadeIn()
+                      .slideY(begin: 0.2),
                 ],
               ),
 
               // Bio
               if (profile?['bio']?.isNotEmpty == true) ...[
-                SizedBox(height: 20.h),
+                SizedBox(height: 24.h),
                 Text(
                   'About',
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textWhite,
                   ),
-                ),
-                SizedBox(height: 8.h),
+                ).animate(delay: const Duration(milliseconds: 700)).fadeIn().slideX(begin: -0.3),
+                SizedBox(height: 12.h),
                 Text(
                   profile!['bio'],
-                  style: TextStyle(
-                    fontSize: 14.sp,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15.sp,
                     color: AppTheme.textWhite,
                     height: 1.5,
                   ),
-                ),
+                ).animate(delay: const Duration(milliseconds: 800)).fadeIn().slideY(begin: 0.2),
               ],
 
               // Interests
               if ((profile?['interests'] as List?)?.isNotEmpty == true) ...[
-                SizedBox(height: 20.h),
+                SizedBox(height: 24.h),
                 Text(
                   'Interests',
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textWhite,
                   ),
-                ),
+                ).animate(delay: const Duration(milliseconds: 900)).fadeIn().slideX(begin: -0.3),
                 SizedBox(height: 12.h),
                 Wrap(
                   spacing: 8.w,
                   runSpacing: 8.h,
-                  children: (profile!['interests'] as List).map((interest) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryYellow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: AppTheme.primaryYellow.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        interest,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppTheme.primaryYellow,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
+                  children: (profile!['interests'] as List).asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final interest = entry.value;
+                    return _buildModernChip(interest, AppTheme.primaryYellow)
+                        .animate(delay: Duration(milliseconds: 1000 + (index * 100)))
+                        .fadeIn()
+                        .scale(begin: const Offset(0.8, 0.8));
                   }).toList(),
                 ),
               ],
 
               // Skills
               if ((profile?['skills'] as List?)?.isNotEmpty == true) ...[
-                SizedBox(height: 20.h),
+                SizedBox(height: 24.h),
                 Text(
                   'Skills',
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textWhite,
                   ),
-                ),
+                ).animate(delay: const Duration(milliseconds: 1200)).fadeIn().slideX(begin: -0.3),
                 SizedBox(height: 12.h),
                 Wrap(
                   spacing: 8.w,
                   runSpacing: 8.h,
-                  children: (profile!['skills'] as List).map((skill) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        color: AppTheme.inputBackground,
-                        borderRadius: BorderRadius.circular(16.r),
-                        border: Border.all(color: AppTheme.inputBorder),
-                      ),
-                      child: Text(
-                        skill,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppTheme.textGray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
+                  children: (profile!['skills'] as List).asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final skill = entry.value;
+                    return _buildModernChip(skill, AppTheme.textGray)
+                        .animate(delay: Duration(milliseconds: 1300 + (index * 100)))
+                        .fadeIn()
+                        .scale(begin: const Offset(0.8, 0.8));
                   }).toList(),
                 ),
               ],
 
               SizedBox(height: 40.h),
 
-              // Logout Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    await ref.read(authProvider.notifier).signOut();
-                    if (mounted) {
-                      context.go('/login');
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red.withOpacity(0.1),
-                    foregroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(vertical: 12.h),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                  ),
-                  child: Text(
-                    'Sign Out',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
+              // Modern Logout Button
+              _buildModernButton(
+                'Sign Out',
+                onPressed: () async {
+                  await ref.read(authProvider.notifier).signOut();
+                  if (mounted) {
+                    context.go('/login');
+                  }
+                },
+                isPrimary: false,
+                isDestructive: true,
+                icon: Icons.logout_rounded,
+              ).animate(delay: const Duration(milliseconds: 1500)).fadeIn().slideY(begin: 0.3),
             ],
           ),
         ),
       ),
     );
+  }
+
+  bool _hasSocialHandles(Map<String, dynamic>? profile) {
+    if (profile == null) return false;
+
+    // Debug print to see what's in the profile
+    print('🔍 Profile data: ${profile.keys.toList()}');
+    print('📱 Instagram: ${profile['instagram_handle']}');
+    print('🐦 Twitter: ${profile['twitter_handle']}');
+    print('💼 LinkedIn: ${profile['linkedin_handle']}');
+    print('💻 GitHub: ${profile['github_handle']}');
+    print('🌐 Website: ${profile['website_url']}');
+
+    return profile['instagram_handle']?.toString().isNotEmpty == true ||
+        profile['twitter_handle']?.toString().isNotEmpty == true ||
+        profile['linkedin_handle']?.toString().isNotEmpty == true ||
+        profile['github_handle']?.toString().isNotEmpty == true ||
+        profile['website_url']?.toString().isNotEmpty == true;
+  }
+
+  // COMPACT SOCIAL HANDLES - displayed as small icons below username
+  Widget _buildCompactSocialHandles(Map<String, dynamic>? profile) {
+    return Row(
+      children: [
+        if (profile?['instagram_handle']?.toString().isNotEmpty == true)
+          _buildSocialIcon(
+            Icons.camera_alt_rounded,
+            AppTheme.accentPurple,
+                () => _launchUrl('https://instagram.com/${profile!['instagram_handle']}'),
+          ),
+        if (profile?['twitter_handle']?.toString().isNotEmpty == true)
+          _buildSocialIcon(
+            Icons.alternate_email_rounded,
+            AppTheme.accentBlue,
+                () => _launchUrl('https://twitter.com/${profile!['twitter_handle']}'),
+          ),
+        if (profile?['linkedin_handle']?.toString().isNotEmpty == true)
+          _buildSocialIcon(
+            Icons.work_rounded,
+            AppTheme.accentBlue,
+                () => _launchUrl('https://linkedin.com/in/${profile!['linkedin_handle']}'),
+          ),
+        if (profile?['github_handle']?.toString().isNotEmpty == true)
+          _buildSocialIcon(
+            Icons.code_rounded,
+            AppTheme.textWhite,
+                () => _launchUrl('https://github.com/${profile!['github_handle']}'),
+          ),
+        if (profile?['website_url']?.toString().isNotEmpty == true)
+          _buildSocialIcon(
+            Icons.language_rounded,
+            AppTheme.accentGreen,
+                () => _launchUrl(profile!['website_url']),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSocialIcon(IconData icon, Color color, VoidCallback onTap) {
+    return Padding(
+      padding: EdgeInsets.only(right: 12.w),
+      child: AnimatedBuilder(
+        animation: _socialController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: 1.0 - (_socialController.value * 0.05),
+            child: GestureDetector(
+              onTapDown: (_) => _socialController.forward(),
+              onTapUp: (_) {
+                _socialController.reverse();
+                onTap();
+              },
+              onTapCancel: () => _socialController.reverse(),
+              child: Container(
+                width: 32.w,
+                height: 32.h,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10.r),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: 18.sp,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      print('❌ Error launching URL: $e');
+    }
   }
 
   Widget _buildAvatarPlaceholder() {
@@ -374,12 +464,21 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
     final letter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'U';
 
     return Container(
-      color: AppTheme.primaryYellow.withOpacity(0.2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryYellow.withOpacity(0.3),
+            AppTheme.primaryYellow.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Center(
         child: Text(
           letter,
-          style: TextStyle(
-            fontSize: 32.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 40.sp,
             fontWeight: FontWeight.w700,
             color: AppTheme.primaryYellow,
           ),
@@ -394,20 +493,131 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
       children: [
         Text(
           count.toString(),
-          style: TextStyle(
-            fontSize: 20.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 24.sp,
             fontWeight: FontWeight.w700,
             color: AppTheme.textWhite,
           ),
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 14.sp,
             color: AppTheme.textGray,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildModernButton(
+      String text, {
+        required VoidCallback onPressed,
+        bool isPrimary = true,
+        bool isDestructive = false,
+        IconData? icon,
+      }) {
+    return AnimatedBuilder(
+      animation: _buttonController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: 1.0 - (_buttonController.value * 0.02),
+          child: GestureDetector(
+            onTapDown: (_) => _buttonController.forward(),
+            onTapUp: (_) {
+              _buttonController.reverse();
+              onPressed();
+            },
+            onTapCancel: () => _buttonController.reverse(),
+            child: Container(
+              width: double.infinity,
+              height: 50.h,
+              decoration: BoxDecoration(
+                gradient: isPrimary && !isDestructive
+                    ? LinearGradient(
+                  colors: [
+                    AppTheme.primaryYellow,
+                    AppTheme.primaryYellow.withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+                    : null,
+                color: isDestructive
+                    ? AppTheme.accentRed.withOpacity(0.1)
+                    : isPrimary
+                    ? null
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(12.r),
+                border: !isPrimary || isDestructive
+                    ? Border.all(
+                  color: isDestructive ? AppTheme.accentRed.withOpacity(0.3) : AppTheme.inputBorder,
+                  width: 1.5,
+                )
+                    : null,
+                boxShadow: isPrimary && !isDestructive
+                    ? [
+                  BoxShadow(
+                    color: AppTheme.primaryYellow.withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+                    : null,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(
+                      icon,
+                      size: 20.sp,
+                      color: isDestructive
+                          ? AppTheme.accentRed
+                          : isPrimary
+                          ? AppTheme.darkBackground
+                          : AppTheme.textWhite,
+                    ),
+                    SizedBox(width: 8.w),
+                  ],
+                  Text(
+                    text,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDestructive
+                          ? AppTheme.accentRed
+                          : isPrimary
+                          ? AppTheme.darkBackground
+                          : AppTheme.textWhite,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernChip(String text, Color color) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 13.sp,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ class FollowState {
   final Map<String, bool> followingStatus;
   final Map<String, int> followerCounts;
   final Map<String, int> followingCounts;
+  final Set<String> loadingUsers; // Add this property
   final bool isLoading;
   final String? error;
 
@@ -13,6 +14,7 @@ class FollowState {
     this.followingStatus = const {},
     this.followerCounts = const {},
     this.followingCounts = const {},
+    this.loadingUsers = const {}, // Add this
     this.isLoading = false,
     this.error,
   });
@@ -21,6 +23,7 @@ class FollowState {
     Map<String, bool>? followingStatus,
     Map<String, int>? followerCounts,
     Map<String, int>? followingCounts,
+    Set<String>? loadingUsers, // Add this
     bool? isLoading,
     String? error,
   }) {
@@ -28,6 +31,7 @@ class FollowState {
       followingStatus: followingStatus ?? this.followingStatus,
       followerCounts: followerCounts ?? this.followerCounts,
       followingCounts: followingCounts ?? this.followingCounts,
+      loadingUsers: loadingUsers ?? this.loadingUsers, // Add this
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -45,8 +49,9 @@ class FollowNotifier extends StateNotifier<FollowState> {
 
     final currentlyFollowing = state.followingStatus[userId] ?? false;
 
-    // Set loading state
-    state = state.copyWith(isLoading: true);
+    // Add user to loading set
+    final newLoadingUsers = {...state.loadingUsers, userId};
+    state = state.copyWith(loadingUsers: newLoadingUsers);
 
     // Optimistic update for BOTH users
     final newFollowingStatus = {...state.followingStatus};
@@ -69,7 +74,6 @@ class FollowNotifier extends StateNotifier<FollowState> {
       followingStatus: newFollowingStatus,
       followerCounts: newFollowerCounts,
       followingCounts: newFollowingCounts,
-      isLoading: false,
     );
 
     try {
@@ -106,6 +110,11 @@ class FollowNotifier extends StateNotifier<FollowState> {
       print('❌ Follow action error: $e');
       // Revert optimistic update on error
       _revertOptimisticUpdate(userId, currentUser.id, currentlyFollowing);
+    } finally {
+      // Remove user from loading set
+      final updatedLoadingUsers = {...state.loadingUsers};
+      updatedLoadingUsers.remove(userId);
+      state = state.copyWith(loadingUsers: updatedLoadingUsers);
     }
   }
 

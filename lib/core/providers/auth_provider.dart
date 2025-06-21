@@ -8,12 +8,14 @@ class AuthState {
   final Map<String, dynamic>? profile;
   final bool isLoading;
   final String? error;
+  final bool hasNetworkError; // ADDED: Track network errors
 
   AuthState({
     this.user,
     this.profile,
     this.isLoading = false,
     this.error,
+    this.hasNetworkError = false, // ADDED: Default to false
   });
 
   AuthState copyWith({
@@ -21,17 +23,25 @@ class AuthState {
     Map<String, dynamic>? profile,
     bool? isLoading,
     String? error,
+    bool? hasNetworkError, // ADDED: Include in copyWith
   }) {
     return AuthState(
       user: user ?? this.user,
       profile: profile ?? this.profile,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      hasNetworkError: hasNetworkError ?? this.hasNetworkError, // ADDED
     );
   }
 
   // FIXED: More robust profile completion check
   bool get isProfileComplete {
+    // ADDED: If there's a network error, assume profile is complete to avoid redirect loop
+    if (hasNetworkError) {
+      print('🌐 Network error detected, assuming profile is complete to avoid redirect loop');
+      return true;
+    }
+
     if (profile == null) {
       print('❌ Profile completion check: No profile data');
       return false;
@@ -110,14 +120,31 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (profile != null) {
         print('✅ Profile loaded successfully');
-        state = state.copyWith(user: user, profile: profile, isLoading: false);
+        state = state.copyWith(user: user, profile: profile, isLoading: false, hasNetworkError: false);
       } else {
         print('⚠️ No profile found, user needs to complete setup');
-        state = state.copyWith(user: user, profile: null, isLoading: false);
+        state = state.copyWith(user: user, profile: null, isLoading: false, hasNetworkError: false);
       }
     } catch (e) {
       print('❌ Error loading profile: $e');
-      state = state.copyWith(user: user, profile: null, isLoading: false, error: e.toString());
+
+      // ADDED: Check if it's a network error
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup') ||
+          e.toString().contains('No address associated');
+
+      if (isNetworkError) {
+        print('🌐 Network error detected, setting offline mode');
+        state = state.copyWith(
+          user: user,
+          profile: null,
+          isLoading: false,
+          hasNetworkError: true,
+          error: 'Network connection failed. Please check your internet connection.',
+        );
+      } else {
+        state = state.copyWith(user: user, profile: null, isLoading: false, error: e.toString(), hasNetworkError: false);
+      }
     }
   }
 
@@ -185,7 +212,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // Email/Password Sign In
   Future<bool> signIn(String email, String password) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, hasNetworkError: false);
 
     try {
       print('🔐 Attempting sign in for: $email');
@@ -215,9 +242,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Unexpected error: $e');
+
+      // ADDED: Check for network errors
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup');
+
       state = state.copyWith(
         isLoading: false,
-        error: 'An unexpected error occurred',
+        hasNetworkError: isNetworkError,
+        error: isNetworkError ? 'Network connection failed. Please check your internet.' : 'An unexpected error occurred',
       );
       return false;
     }
@@ -231,7 +264,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     required String lastName,
     String? username,
   }) async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, hasNetworkError: false);
 
     try {
       print('📝 Attempting sign up for: $email');
@@ -273,9 +306,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Unexpected error: $e');
+
+      // ADDED: Check for network errors
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup');
+
       state = state.copyWith(
         isLoading: false,
-        error: 'Registration failed',
+        hasNetworkError: isNetworkError,
+        error: isNetworkError ? 'Sign up requires internet connection' : 'Registration failed',
       );
       return false;
     }
@@ -283,7 +322,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // Google Sign In
   Future<bool> signInWithGoogle() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, hasNetworkError: false);
 
     try {
       print('🔍 Starting Google sign in...');
@@ -301,9 +340,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ Google sign in error: $e');
+
+      // ADDED: Check for network errors
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup');
+
       state = state.copyWith(
         isLoading: false,
-        error: 'Google sign in failed',
+        hasNetworkError: isNetworkError,
+        error: isNetworkError ? 'Google sign in requires internet connection' : 'Google sign in failed',
       );
       return false;
     }
@@ -311,7 +356,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // GitHub Sign In
   Future<bool> signInWithGitHub() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, hasNetworkError: false);
 
     try {
       print('🐙 Starting GitHub sign in...');
@@ -329,9 +374,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       print('❌ GitHub sign in error: $e');
+
+      // ADDED: Check for network errors
+      final isNetworkError = e.toString().contains('SocketException') ||
+          e.toString().contains('Failed host lookup');
+
       state = state.copyWith(
         isLoading: false,
-        error: 'GitHub sign in failed',
+        hasNetworkError: isNetworkError,
+        error: isNetworkError ? 'GitHub sign in requires internet connection' : 'GitHub sign in failed',
       );
       return false;
     }
@@ -351,7 +402,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   // Clear error
   void clearError() {
-    state = state.copyWith(error: null);
+    state = state.copyWith(error: null, hasNetworkError: false);
   }
 
   // Backward compatibility

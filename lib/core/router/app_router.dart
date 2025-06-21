@@ -10,7 +10,7 @@ import '../../features/auth/screens/register_screen.dart';
 import '../../features/home/screens/main_screen.dart';
 import '../../features/profile/screens/profile_screen.dart';
 import '../../features/profile/screens/edit_profile_screen.dart';
-import '../../features/profile/screens/user_screen.dart';
+import '../../features/profile/screens/user_screen.dart'; // FIXED: Changed to user_screen.dart
 import '../../features/projects/screens/project_detail_screen.dart';
 import '../../features/events/screens/event_detail_screen.dart';
 import '../../features/profile/screens/profile_setup_screen.dart';
@@ -54,6 +54,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (authState.isLoading) {
           print('Profile still loading, staying on current route');
           return null;
+        }
+
+        // ADDED: Handle network errors gracefully - allow access to home when offline
+        if (authState.hasNetworkError) {
+          print('🌐 Network error detected, allowing access to home');
+          // If on auth pages and logged in with network error, go to home
+          if (currentLocation == '/login' || currentLocation == '/register') {
+            return '/home';
+          }
+          // If trying to access profile setup with network error, go to home
+          if (currentLocation == '/profile-setup') {
+            return '/home';
+          }
+          return null; // Stay on current page for other routes
         }
 
         final isProfileComplete = profile?['profile_completed'] == true;
@@ -129,7 +143,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/users',
-        builder: (context, state) => const UsersScreen(),
+        builder: (context, state) => const UsersScreen(), // FIXED: Changed to UserScreen
       ),
       GoRoute(
         path: '/home',

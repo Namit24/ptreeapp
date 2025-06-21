@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:path/path.dart' as path;
 import '../config/supabase_config.dart';
 
 class SupabaseService {
@@ -108,33 +110,70 @@ class SupabaseService {
     }
   }
 
-  // Profile image upload
+  // ENHANCED: Profile image upload with better error handling and binary upload
   static Future<String> uploadProfileImage({
     required String userId,
     required File imageFile,
   }) async {
     try {
-      print('📸 Uploading profile image for: $userId');
+      print('🚀 Starting profile image upload for user: $userId');
 
-      final fileName = 'profile_$userId.jpg';
-      final filePath = 'profiles/$fileName';
+      // Read file as bytes
+      final Uint8List fileBytes = await imageFile.readAsBytes();
+      final String fileExtension = path.extension(imageFile.path).toLowerCase();
 
-      await client.storage
+      // Validate file type
+      if (!['.jpg', '.jpeg', '.png', '.webp'].contains(fileExtension)) {
+        throw Exception('Unsupported file type. Please use JPG, PNG, or WebP.');
+      }
+
+      // Validate file size (5MB limit)
+      if (fileBytes.length > 5 * 1024 * 1024) {
+        throw Exception('File too large. Please choose an image smaller than 5MB.');
+      }
+
+      // Generate unique filename
+      final String fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}$fileExtension';
+      final String filePath = '$userId/$fileName';
+
+      print('📁 Uploading to path: $filePath');
+      print('📊 File size: ${fileBytes.length} bytes');
+
+      // Upload to Supabase Storage using binary upload
+      final String uploadPath = await client.storage
           .from('avatars')
-          .upload(filePath, imageFile, fileOptions: const FileOptions(
-        cacheControl: '3600',
-        upsert: true,
-      ));
+          .uploadBinary(
+        filePath,
+        fileBytes,
+        fileOptions: FileOptions(
+          cacheControl: '3600',
+          upsert: true, // Allow overwriting
+        ),
+      );
 
-      final publicUrl = client.storage
+      print('✅ Upload successful: $uploadPath');
+
+      // Get public URL
+      final String publicUrl = client.storage
           .from('avatars')
           .getPublicUrl(filePath);
 
-      print('✅ Image uploaded: $publicUrl');
+      print('🌐 Public URL: $publicUrl');
+
       return publicUrl;
     } catch (e) {
-      print('❌ Error uploading image: $e');
-      throw Exception('Failed to upload image: $e');
+      print('❌ Upload error details: $e');
+
+      // Provide more specific error messages
+      if (e.toString().contains('row-level security policy')) {
+        throw Exception('Storage permission denied. Please contact support.');
+      } else if (e.toString().contains('413')) {
+        throw Exception('File too large. Please choose a smaller image.');
+      } else if (e.toString().contains('415')) {
+        throw Exception('Unsupported file type. Please use JPG, PNG, or WebP.');
+      } else {
+        throw Exception('Failed to upload image: ${e.toString()}');
+      }
     }
   }
 
@@ -291,7 +330,7 @@ class SupabaseService {
     }
   }
 
-  // NEW: Search users functionality
+  // Search users functionality
   static Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     try {
       print('🔍 Searching users with query: $query');
@@ -468,7 +507,7 @@ class SupabaseService {
     }
   }
 
-  // NEW: Update follower/following counts
+  // Update follower/following counts
   static Future<void> updateFollowCounts(String userId) async {
     try {
       print('📊 Updating follow counts for user: $userId');

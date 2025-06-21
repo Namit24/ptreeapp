@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../providers/feed_provider.dart';
@@ -38,7 +39,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.primaryWhite,
-      appBar: _buildAppBar(),
+      // IMPROVED HEADER - Better spacing
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(56.h), // Standard height
+        child: Container(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 4.h, // Reduced top padding
+            left: 16.w,
+            right: 16.w,
+            bottom: 4.h, // Reduced bottom padding
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryWhite,
+            border: Border(
+              bottom: BorderSide(
+                color: AppTheme.lightGray,
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Modern Logo
+              Container(
+                width: 28.w, // Slightly smaller
+                height: 28.h,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryYellow,
+                      AppTheme.primaryYellow.withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(7.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryYellow.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.account_tree_rounded,
+                  color: AppTheme.primaryBlack,
+                  size: 16.sp,
+                ),
+              ),
+              SizedBox(width: 10.w),
+              Text(
+                'ProjecTree',
+                style: GoogleFonts.inter(
+                  fontSize: 18.sp, // Slightly smaller
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.primaryBlack,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const Spacer(),
+              // Modern Action Buttons
+              _buildModernActionButton(Icons.notifications_none, () {}),
+              SizedBox(width: 8.w),
+              _buildModernActionButton(Icons.chat_bubble_outline, () {}),
+            ],
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: () => ref.read(feedProvider.notifier).refresh(),
         color: AppTheme.primaryYellow,
@@ -47,9 +115,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           slivers: [
             // Spotlight Section
             SliverToBoxAdapter(
-              child: const SpotlightSection().animate().fadeIn(duration: 600.ms),
+              child: Padding(
+                padding: EdgeInsets.only(top: 8.h), // Reduced top padding
+                child: const SpotlightSection(),
+              ).animate().fadeIn(duration: 600.ms),
             ),
-            
+
             // Recent Projects Horizontal Scroll
             SliverToBoxAdapter(
               child: _buildHorizontalSection(
@@ -58,7 +129,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildProjectsHorizontal(),
               ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
             ),
-            
+
             // Upcoming Events Horizontal Scroll
             SliverToBoxAdapter(
               child: _buildHorizontalSection(
@@ -67,23 +138,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 _buildEventsHorizontal(),
               ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
             ),
-            
+
             // Feed Header
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.all(16.w),
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h), // Reduced padding
                 child: Text(
                   'Your Feed',
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: GoogleFonts.inter(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryBlack,
+                  ),
                 ),
               ).animate().fadeIn(duration: 600.ms, delay: 600.ms),
             ),
-            
+
             // Main Feed
             feedState.when(
               data: (items) => SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) {
+                      (context, index) {
                     if (index >= items.length) {
                       return Container(
                         padding: EdgeInsets.all(20.w),
@@ -94,7 +169,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       );
                     }
-                    
+
                     final item = items[index];
                     Widget card;
                     if (item['type'] == 'project') {
@@ -102,11 +177,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     } else {
                       card = EventCard(event: item['data']);
                     }
-                    
-                    return card.animate().fadeIn(
-                      duration: 400.ms,
-                      delay: Duration(milliseconds: index * 100),
-                    ).slideY(begin: 0.1);
+
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: 12.h), // Consistent spacing
+                      child: card.animate().fadeIn(
+                        duration: 400.ms,
+                        delay: Duration(milliseconds: index * 100),
+                      ).slideY(begin: 0.1),
+                    );
                   },
                   childCount: items.length,
                 ),
@@ -118,76 +196,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: _buildErrorState(error),
               ),
             ),
+
+            // Bottom padding for navigation - IMPROVED
+            SliverToBoxAdapter(
+              child: SizedBox(height: 80.h), // Reduced from 100.h
+            ),
           ],
         ),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: AppTheme.primaryWhite,
-      elevation: 0,
-      title: Row(
-        children: [
-          Container(
-            width: 36.w,
-            height: 36.h,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryYellow,
-              borderRadius: BorderRadius.circular(10.r),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryYellow.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.account_tree_rounded,
-              color: AppTheme.primaryBlack,
-              size: 20.sp,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Text(
-            'ProjecTree',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              fontSize: 22.sp,
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        _buildAppBarAction(Icons.notifications_outlined, () {}),
-        _buildAppBarAction(Icons.chat_bubble_outline, () {}),
-        SizedBox(width: 8.w),
-      ],
-    );
-  }
-
-  Widget _buildAppBarAction(IconData icon, VoidCallback onPressed) {
-    return Container(
-      margin: EdgeInsets.only(right: 8.w),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(10.r),
-          child: Container(
-            width: 40.w,
-            height: 40.h,
-            decoration: BoxDecoration(
-              color: AppTheme.lightGray,
-              borderRadius: BorderRadius.circular(10.r),
-            ),
-            child: Icon(
-              icon,
-              color: AppTheme.primaryBlack,
-              size: 20.sp,
-            ),
-          ),
+  Widget _buildModernActionButton(IconData icon, VoidCallback onPressed) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 36.w, // Slightly smaller
+        height: 36.h,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(18.r),
+        ),
+        child: Icon(
+          icon,
+          color: AppTheme.primaryBlack,
+          size: 22.sp, // Slightly smaller
         ),
       ),
     );
@@ -198,57 +231,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h), // Reduced padding
           child: Row(
             children: [
               Container(
-                padding: EdgeInsets.all(8.w),
+                padding: EdgeInsets.all(6.w), // Slightly smaller
                 decoration: BoxDecoration(
                   color: AppTheme.primaryYellow.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8.r),
+                  borderRadius: BorderRadius.circular(6.r),
                 ),
                 child: Icon(
                   icon,
                   color: AppTheme.primaryYellow,
-                  size: 20.sp,
+                  size: 18.sp,
                 ),
               ),
-              SizedBox(width: 12.w),
+              SizedBox(width: 10.w),
               Text(
                 title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: 18.sp,
+                style: GoogleFonts.inter(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryBlack,
                 ),
               ),
             ],
           ),
         ),
         content,
-        SizedBox(height: 20.h),
+        SizedBox(height: 16.h), // Reduced spacing
       ],
     );
   }
 
   Widget _buildProjectsHorizontal() {
     return SizedBox(
-      height: 200.h,
+      height: 180.h, // Slightly smaller
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         itemCount: 5,
         itemBuilder: (context, index) {
           return Container(
-            width: 280.w,
-            margin: EdgeInsets.only(right: 16.w),
+            width: 260.w, // Slightly smaller
+            margin: EdgeInsets.only(right: 12.w), // Reduced margin
             decoration: BoxDecoration(
               color: AppTheme.glassBackground,
-              borderRadius: BorderRadius.circular(16.r),
+              borderRadius: BorderRadius.circular(12.r), // Slightly smaller radius
               border: Border.all(color: AppTheme.glassBorder),
               boxShadow: [
                 BoxShadow(
                   color: AppTheme.shadowColor,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
@@ -256,34 +291,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 120.h,
+                  height: 100.h, // Smaller image area
                   decoration: BoxDecoration(
                     color: AppTheme.lightGray,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(16.r)),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(12.r)),
                   ),
                   child: Center(
                     child: Icon(
                       Icons.image,
-                      size: 40.sp,
+                      size: 32.sp,
                       color: AppTheme.neutralGray,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: EdgeInsets.all(12.w),
+                  padding: EdgeInsets.all(10.w), // Reduced padding
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Sample Project ${index + 1}',
-                        style: Theme.of(context).textTheme.labelLarge,
+                        style: GoogleFonts.inter(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.primaryBlack,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 4.h),
+                      SizedBox(height: 3.h),
                       Text(
                         'Project description here...',
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: GoogleFonts.inter(
+                          fontSize: 11.sp,
+                          color: AppTheme.neutralGray,
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -300,67 +342,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildEventsHorizontal() {
     return SizedBox(
-      height: 160.h,
+      height: 140.h, // Smaller height
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         itemCount: 5,
         itemBuilder: (context, index) {
           return Container(
-            width: 240.w,
-            margin: EdgeInsets.only(right: 16.w),
+            width: 220.w, // Smaller width
+            margin: EdgeInsets.only(right: 12.w),
             decoration: BoxDecoration(
               color: AppTheme.glassBackground,
-              borderRadius: BorderRadius.circular(16.r),
+              borderRadius: BorderRadius.circular(12.r),
               border: Border.all(color: AppTheme.glassBorder),
               boxShadow: [
                 BoxShadow(
                   color: AppTheme.shadowColor,
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
               ],
             ),
             child: Padding(
-              padding: EdgeInsets.all(16.w),
+              padding: EdgeInsets.all(12.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(8.w),
+                        padding: EdgeInsets.all(6.w),
                         decoration: BoxDecoration(
                           color: AppTheme.primaryYellow.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8.r),
+                          borderRadius: BorderRadius.circular(6.r),
                         ),
                         child: Icon(
                           Icons.event,
                           color: AppTheme.primaryYellow,
-                          size: 16.sp,
+                          size: 14.sp,
                         ),
                       ),
-                      SizedBox(width: 8.w),
+                      SizedBox(width: 6.w),
                       Text(
                         'Dec ${20 + index}',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        style: GoogleFonts.inter(
+                          fontSize: 11.sp,
                           color: AppTheme.primaryYellow,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 12.h),
+                  SizedBox(height: 8.h),
                   Text(
                     'Sample Event ${index + 1}',
-                    style: Theme.of(context).textTheme.labelLarge,
+                    style: GoogleFonts.inter(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryBlack,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4.h),
+                  SizedBox(height: 3.h),
                   Text(
                     'Event description and details...',
-                    style: Theme.of(context).textTheme.bodySmall,
+                    style: GoogleFonts.inter(
+                      fontSize: 11.sp,
+                      color: AppTheme.neutralGray,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -369,14 +419,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Icon(
                         Icons.location_on_outlined,
-                        size: 14.sp,
+                        size: 12.sp,
                         color: AppTheme.neutralGray,
                       ),
-                      SizedBox(width: 4.w),
+                      SizedBox(width: 3.w),
                       Expanded(
                         child: Text(
                           'Main Auditorium',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: GoogleFonts.inter(
+                            fontSize: 10.sp,
+                            color: AppTheme.neutralGray,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -404,7 +457,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           SizedBox(height: 16.h),
           Text(
             'Loading your feed...',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: GoogleFonts.inter(
+              fontSize: 14.sp,
               color: AppTheme.neutralGray,
             ),
           ),
@@ -419,32 +473,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 80.w,
-            height: 80.h,
+            width: 60.w, // Smaller error icon
+            height: 60.h,
             decoration: BoxDecoration(
               color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(40.r),
+              borderRadius: BorderRadius.circular(30.r),
             ),
             child: Icon(
               Icons.error_outline,
-              size: 40.sp,
+              size: 30.sp,
               color: Colors.red.shade400,
             ),
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 16.h),
           Text(
             'Something went wrong',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: GoogleFonts.inter(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.primaryBlack,
+            ),
           ),
-          SizedBox(height: 8.h),
+          SizedBox(height: 6.h),
           Text(
             'We couldn\'t load your feed right now',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: GoogleFonts.inter(
+              fontSize: 13.sp,
               color: AppTheme.neutralGray,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 20.h),
           ElevatedButton(
             onPressed: () => ref.read(feedProvider.notifier).refresh(),
             child: Text('Try Again'),

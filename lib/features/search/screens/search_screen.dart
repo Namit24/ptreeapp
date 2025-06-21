@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../profile/widgets/follow_button.dart';
@@ -25,12 +26,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   void initState() {
     super.initState();
-    // Remove _loadAllUsers() - start with empty screen
   }
 
   Future<void> _searchUsers(String query) async {
     if (query.trim().isEmpty) {
-      // Clear results when search is empty
       setState(() {
         searchResults = [];
         hasSearched = false;
@@ -49,7 +48,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     try {
       final users = await SupabaseService.searchUsers(query);
 
-      // Load follow status for each user
       for (final user in users) {
         await ref.read(followProvider.notifier).checkFollowStatus(user['id']);
         ref.read(followProvider.notifier).updateFollowerCount(
@@ -74,69 +72,99 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
-      appBar: AppBar(
-        backgroundColor: AppTheme.darkerBackground,
-        elevation: 0,
-        title: Container(
-          height: 40.h,
-          decoration: BoxDecoration(
-            color: AppTheme.inputBackground,
-            borderRadius: BorderRadius.circular(20.r),
-            border: Border.all(color: AppTheme.inputBorder),
+      // FIXED HEADER - Better spacing from top
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(80.h), // Increased height
+        child: Container(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 16.h, // Increased padding
+            left: 16.w,
+            right: 16.w,
+            bottom: 16.h, // Increased bottom padding
           ),
-          child: TextField(
-            controller: _searchController,
-            style: TextStyle(
-              color: AppTheme.textWhite,
-              fontSize: 16.sp,
+          decoration: BoxDecoration(
+            color: AppTheme.darkerBackground,
+            border: Border(
+              bottom: BorderSide(
+                color: AppTheme.inputBorder,
+                width: 0.5,
+              ),
             ),
-            decoration: InputDecoration(
-              hintText: 'Search students...',
-              hintStyle: TextStyle(
-                color: AppTheme.textGray,
-                fontSize: 16.sp,
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                color: AppTheme.textGray,
-                size: 20.sp,
-              ),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                icon: Icon(
-                  Icons.clear,
-                  color: AppTheme.textGray,
-                  size: 20.sp,
+          ),
+          child: Row(
+            children: [
+              // Modern Search Bar - Better positioned
+              Expanded(
+                child: Container(
+                  height: 44.h,
+                  decoration: BoxDecoration(
+                    color: AppTheme.inputBackground,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppTheme.inputBorder,
+                      width: 1,
+                    ),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.textWhite,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Search students...',
+                      hintStyle: GoogleFonts.poppins(
+                        color: AppTheme.textPlaceholder,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      prefixIcon: Container(
+                        padding: EdgeInsets.all(12.w),
+                        child: Icon(
+                          Icons.search_rounded,
+                          color: AppTheme.textPlaceholder,
+                          size: 20.sp,
+                        ),
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: AppTheme.textGray,
+                          size: 20.sp,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            searchResults = [];
+                            hasSearched = false;
+                          });
+                        },
+                      )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16.w,
+                        vertical: 12.h,
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {});
+                      if (value.isEmpty) {
+                        setState(() {
+                          searchResults = [];
+                          hasSearched = false;
+                        });
+                      } else {
+                        _searchUsers(value);
+                      }
+                    },
+                    onSubmitted: _searchUsers,
+                  ),
                 ),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() {
-                    searchResults = [];
-                    hasSearched = false;
-                  });
-                },
-              )
-                  : null,
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 10.h,
               ),
-            ),
-            onChanged: (value) {
-              setState(() {}); // Rebuild to show/hide clear button
-              if (value.isEmpty) {
-                // Clear results immediately when search is cleared
-                setState(() {
-                  searchResults = [];
-                  hasSearched = false;
-                });
-              } else {
-                // Optional: Add debounced search here for better UX
-                _searchUsers(value);
-              }
-            },
-            onSubmitted: _searchUsers,
+            ],
           ),
         ),
       ),
@@ -150,13 +178,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AppTheme.primaryYellow),
+            CircularProgressIndicator(
+              color: AppTheme.primaryYellow,
+              strokeWidth: 3,
+            ),
             SizedBox(height: 16.h),
             Text(
-              hasSearched ? 'Searching...' : 'Loading students...',
-              style: TextStyle(
+              'Searching...',
+              style: GoogleFonts.poppins(
                 color: AppTheme.textGray,
                 fontSize: 16.sp,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -169,15 +201,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64.sp,
-              color: AppTheme.textGray,
+            Container(
+              width: 80.w,
+              height: 80.h,
+              decoration: BoxDecoration(
+                color: AppTheme.accentRed.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(40.r),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 40.sp,
+                color: AppTheme.accentRed,
+              ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 20.h),
             Text(
               'Something went wrong',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: AppTheme.textWhite,
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
@@ -186,7 +226,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             SizedBox(height: 8.h),
             Text(
               error!,
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: AppTheme.textGray,
                 fontSize: 14.sp,
               ),
@@ -199,10 +239,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   _searchUsers(_searchController.text);
                 }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryYellow,
-                foregroundColor: AppTheme.darkBackground,
-              ),
               child: Text('Retry'),
             ),
           ],
@@ -215,26 +251,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              hasSearched ? Icons.search_off : Icons.search,
-              size: 64.sp,
-              color: AppTheme.textGray,
+            Container(
+              width: 100.w,
+              height: 100.h,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryYellow.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(50.r),
+              ),
+              child: Icon(
+                hasSearched ? Icons.search_off_rounded : Icons.search_rounded,
+                size: 50.sp,
+                color: AppTheme.primaryYellow,
+              ),
             ),
-            SizedBox(height: 16.h),
+            SizedBox(height: 24.h),
             Text(
               hasSearched ? 'No results found' : 'Search for students',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: AppTheme.textWhite,
-                fontSize: 18.sp,
+                fontSize: 20.sp,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            SizedBox(height: 8.h),
+            SizedBox(height: 12.h),
             Text(
               hasSearched
                   ? 'Try searching with different keywords'
                   : 'Enter a name or username to find students',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: AppTheme.textGray,
                 fontSize: 14.sp,
               ),
@@ -258,63 +302,76 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         itemCount: searchResults.length,
         itemBuilder: (context, index) {
           final user = searchResults[index];
-          return _buildUserCard(user);
+          return _buildModernUserCard(user);
         },
       ),
     );
   }
 
-  Widget _buildUserCard(Map<String, dynamic> user) {
+  Widget _buildModernUserCard(Map<String, dynamic> user) {
     final followState = ref.watch(followProvider);
     final isFollowing = followState.followingStatus[user['id']] ?? false;
     final followerCount = followState.followerCounts[user['id']] ?? user['followers_count'] ?? 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
-      padding: EdgeInsets.all(16.w),
+      padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: AppTheme.darkerBackground,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppTheme.inputBorder),
+        color: AppTheme.cardBackground,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: AppTheme.inputBorder.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: () => context.push('/profile/${user['id']}'),
-        borderRadius: BorderRadius.circular(12.r),
+        borderRadius: BorderRadius.circular(16.r),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                // Profile Image
+                // Modern Profile Image
                 Container(
-                  width: 50.w,
-                  height: 50.h,
+                  width: 60.w,
+                  height: 60.h,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(25.r),
-                    border: Border.all(color: AppTheme.primaryYellow, width: 2),
+                    borderRadius: BorderRadius.circular(30.r),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryYellow,
+                        AppTheme.primaryYellow.withOpacity(0.8),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(23.r),
-                    child: user['profile_image_url'] != null
-                        ? CachedNetworkImage(
-                      imageUrl: user['profile_image_url'],
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: AppTheme.primaryYellow.withOpacity(0.2),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primaryYellow,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => _buildAvatarPlaceholder(user),
-                    )
-                        : _buildAvatarPlaceholder(user),
+                  child: Container(
+                    margin: EdgeInsets.all(2.w),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(28.r),
+                      color: AppTheme.darkBackground,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(26.r),
+                      child: user['profile_image_url'] != null
+                          ? CachedNetworkImage(
+                        imageUrl: user['profile_image_url'],
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => _buildAvatarPlaceholder(user),
+                        errorWidget: (context, url, error) => _buildAvatarPlaceholder(user),
+                      )
+                          : _buildAvatarPlaceholder(user),
+                    ),
                   ),
                 ),
 
-                SizedBox(width: 12.w),
+                SizedBox(width: 16.w),
 
                 // User Info
                 Expanded(
@@ -323,33 +380,34 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     children: [
                       Text(
                         user['full_name'] ?? 'Unknown User',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textWhite,
                         ),
                       ),
-                      SizedBox(height: 2.h),
+                      SizedBox(height: 4.h),
                       Text(
                         '@${user['username'] ?? 'unknown'}',
-                        style: TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 14.sp,
                           color: AppTheme.primaryYellow,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       if (user['location']?.isNotEmpty == true) ...[
-                        SizedBox(height: 2.h),
+                        SizedBox(height: 6.h),
                         Row(
                           children: [
                             Icon(
-                              Icons.location_on,
-                              size: 12.sp,
+                              Icons.location_on_rounded,
+                              size: 14.sp,
                               color: AppTheme.textGray,
                             ),
                             SizedBox(width: 4.w),
                             Text(
                               user['location'],
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 fontSize: 12.sp,
                                 color: AppTheme.textGray,
                               ),
@@ -371,76 +429,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
             // Bio
             if (user['bio']?.isNotEmpty == true) ...[
-              SizedBox(height: 12.h),
+              SizedBox(height: 16.h),
               Text(
                 user['bio'],
-                style: TextStyle(
+                style: GoogleFonts.poppins(
                   fontSize: 14.sp,
                   color: AppTheme.textWhite,
-                  height: 1.4,
+                  height: 1.5,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
 
-            // Interests and Skills
-            if ((user['interests'] as List?)?.isNotEmpty == true ||
-                (user['skills'] as List?)?.isNotEmpty == true) ...[
-              SizedBox(height: 12.h),
-              Wrap(
-                spacing: 6.w,
-                runSpacing: 6.h,
-                children: [
-                  // Show first 3 interests
-                  ...((user['interests'] as List?) ?? []).take(3).map((interest) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryYellow.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: AppTheme.primaryYellow.withOpacity(0.3)),
-                      ),
-                      child: Text(
-                        interest,
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: AppTheme.primaryYellow,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-
-                  // Show first 2 skills
-                  ...((user['skills'] as List?) ?? []).take(2).map((skill) {
-                    return Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: AppTheme.inputBackground,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: AppTheme.inputBorder),
-                      ),
-                      child: Text(
-                        skill,
-                        style: TextStyle(
-                          fontSize: 10.sp,
-                          color: AppTheme.textGray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ],
-              ),
-            ],
-
             // Stats
-            SizedBox(height: 12.h),
+            SizedBox(height: 16.h),
             Row(
               children: [
                 _buildStatItem('Followers', followerCount),
-                SizedBox(width: 16.w),
+                SizedBox(width: 24.w),
                 _buildStatItem('Following', user['following_count'] ?? 0),
               ],
             ),
@@ -455,12 +462,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final letter = name.isNotEmpty ? name.substring(0, 1).toUpperCase() : 'U';
 
     return Container(
-      color: AppTheme.primaryYellow.withOpacity(0.2),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryYellow.withOpacity(0.3),
+            AppTheme.primaryYellow.withOpacity(0.1),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       child: Center(
         child: Text(
           letter,
-          style: TextStyle(
-            fontSize: 20.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 24.sp,
             fontWeight: FontWeight.w700,
             color: AppTheme.primaryYellow,
           ),
@@ -475,17 +491,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       children: [
         Text(
           count.toString(),
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
+          style: GoogleFonts.poppins(
+            fontSize: 16.sp,
+            fontWeight: FontWeight.w700,
             color: AppTheme.textWhite,
           ),
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 10.sp,
+          style: GoogleFonts.poppins(
+            fontSize: 11.sp,
             color: AppTheme.textGray,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
