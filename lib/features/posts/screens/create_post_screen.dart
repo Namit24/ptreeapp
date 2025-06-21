@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../providers/posts_provider.dart';
 
 class CreatePostScreen extends ConsumerStatefulWidget {
@@ -16,7 +17,7 @@ class CreatePostScreen extends ConsumerStatefulWidget {
 }
 
 class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
-  final _contentController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
   File? _selectedImage;
   bool _isLoading = false;
 
@@ -27,26 +28,38 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1080,
-      maxHeight: 1080,
-      imageQuality: 85,
-    );
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1080,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
 
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
+      print('❌ Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image'),
+            backgroundColor: AppTheme.accentRed,
+          ),
+        );
+      }
     }
   }
 
   Future<void> _createPost() async {
-    if (_contentController.text.trim().isEmpty) {
+    if (_contentController.text.trim().isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter some content'),
+          content: Text('Please add some content or an image'),
           backgroundColor: AppTheme.accentRed,
         ),
       );
@@ -57,26 +70,30 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       _isLoading = true;
     });
 
-    final success = await ref.read(postsProvider.notifier).createPost(
-      content: _contentController.text.trim(),
-      imageFile: _selectedImage,
-    );
+    try {
+      final success = await ref.read(postsProvider.notifier).createPost(
+        content: _contentController.text.trim(),
+        imageFile: _selectedImage,
+      );
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success) {
-      if (mounted) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Post created successfully!'),
             backgroundColor: AppTheme.accentGreen,
           ),
         );
-        context.pop();
+        context.go('/home'); // Navigate back to home
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create post'),
+            backgroundColor: AppTheme.accentRed,
+          ),
+        );
       }
-    } else {
+    } catch (e) {
+      print('❌ Error creating post: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -85,16 +102,33 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final profile = authState.profile;
+
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
         backgroundColor: AppTheme.darkerBackground,
         elevation: 0,
+        leading: IconButton(
+          onPressed: () => context.go('/home'),
+          icon: Icon(
+            Icons.close,
+            color: AppTheme.textWhite,
+            size: 24.sp,
+          ),
+        ),
         title: Text(
           'Create Post',
           style: GoogleFonts.poppins(
@@ -103,7 +137,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        iconTheme: IconThemeData(color: AppTheme.textWhite),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _createPost,
@@ -125,22 +158,83 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               ),
             ),
           ),
+          SizedBox(width: 8.w),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: EdgeInsets.all(16.w),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // User info
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20.r,
+                  backgroundColor: AppTheme.primaryYellow.withOpacity(0.2),
+                  backgroundImage: profile?['profile_image_url'] != null
+                      ? NetworkImage(profile!['profile_image_url'])
+                      : null,
+                  child: profile?['profile_image_url'] == null
+                      ? Text(
+                    (profile?['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.primaryYellow,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                      : null,
+                ),
+                SizedBox(width: 12.w),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile?['full_name'] ?? 'Your Name',
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.textWhite,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      '@${profile?['username'] ?? 'username'}',
+                      style: GoogleFonts.poppins(
+                        color: AppTheme.textGray,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+
+            SizedBox(height: 20.h),
+
             // Content input
-            Expanded(
+            Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                minHeight: 120.h,
+                maxHeight: 200.h,
+              ),
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: AppTheme.inputBackground,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: AppTheme.inputBorder,
+                  width: 1,
+                ),
+              ),
               child: TextField(
                 controller: _contentController,
                 maxLines: null,
-                expands: true,
-                textAlignVertical: TextAlignVertical.top,
                 style: GoogleFonts.poppins(
                   color: AppTheme.textWhite,
                   fontSize: 16.sp,
+                  height: 1.4,
                 ),
                 decoration: InputDecoration(
                   hintText: "What's on your mind?",
@@ -149,81 +243,146 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     fontSize: 16.sp,
                   ),
                   border: InputBorder.none,
+                  contentPadding: EdgeInsets.zero,
                 ),
               ),
             ),
 
+            SizedBox(height: 20.h),
+
             // Selected image preview
             if (_selectedImage != null) ...[
-              SizedBox(height: 16.h),
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Image.file(
-                      _selectedImage!,
-                      height: 200.h,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+              Container(
+                width: double.infinity,
+                height: 200.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppTheme.inputBorder,
+                    width: 1,
                   ),
-                  Positioned(
-                    top: 8.h,
-                    right: 8.w,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedImage = null;
-                        });
-                      },
-                      child: Container(
-                        padding: EdgeInsets.all(4.w),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20.r),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          color: Colors.white,
-                          size: 20.sp,
+                ),
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(11.r),
+                      child: Image.file(
+                        _selectedImage!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8.h,
+                      right: 8.w,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedImage = null;
+                          });
+                        },
+                        child: Container(
+                          width: 32.w,
+                          height: 32.h,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 20.sp,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              SizedBox(height: 20.h),
             ],
 
-            SizedBox(height: 16.h),
-
-            // Image picker button
+            // Add image button
             GestureDetector(
               onTap: _pickImage,
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                width: double.infinity,
+                height: 50.h,
                 decoration: BoxDecoration(
                   color: AppTheme.inputBackground,
                   borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(color: AppTheme.inputBorder),
+                  border: Border.all(
+                    color: AppTheme.inputBorder,
+                    width: 1,
+                  ),
                 ),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      Icons.image_rounded,
+                      Icons.image_outlined,
                       color: AppTheme.primaryYellow,
                       size: 24.sp,
                     ),
-                    SizedBox(width: 12.w),
+                    SizedBox(width: 8.w),
                     Text(
-                      _selectedImage != null ? 'Change Image' : 'Add Image',
+                      _selectedImage == null ? 'Add Image' : 'Change Image',
                       style: GoogleFonts.poppins(
-                        color: AppTheme.textWhite,
+                        color: AppTheme.primaryYellow,
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
+              ),
+            ),
+
+            SizedBox(height: 20.h),
+
+            // Post guidelines
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryYellow.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: AppTheme.primaryYellow.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        color: AppTheme.primaryYellow,
+                        size: 20.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Text(
+                        'Posting Guidelines',
+                        style: GoogleFonts.poppins(
+                          color: AppTheme.primaryYellow,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    '• Be respectful and kind to others\n• Share relevant content for students\n• No spam or inappropriate content\n• Keep it professional and engaging',
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.textGray,
+                      fontSize: 12.sp,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

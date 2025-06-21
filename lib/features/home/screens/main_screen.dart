@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/providers/auth_provider.dart';
 import 'home_screen.dart';
 import '../../search/screens/search_screen.dart';
 import '../../posts/screens/create_post_screen.dart';
@@ -95,7 +96,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         },
         children: _screens,
       ),
-      // FIXED: Modern dark navbar with proper sizing
+      // FIXED: Compact bottom navigation bar
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -122,8 +123,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
         ),
         child: SafeArea(
           child: Container(
-            height: 60.h, // FIXED: Reduced height to prevent overflow
-            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h), // FIXED: Reduced padding
+            height: 60.h, // REDUCED from 70.h
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h), // REDUCED padding
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: _navItems.asMap().entries.map((entry) {
@@ -150,14 +151,14 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
           return Container(
             padding: EdgeInsets.symmetric(
-              horizontal: 12.w, // FIXED: Reduced padding
-              vertical: 6.h,    // FIXED: Reduced padding
+              horizontal: 12.w, // REDUCED from 16.w
+              vertical: 6.h,    // REDUCED from 8.h
             ),
             decoration: BoxDecoration(
               color: isSelected
                   ? AppTheme.primaryYellow.withOpacity(0.15)
                   : Colors.transparent,
-              borderRadius: BorderRadius.circular(16.r), // FIXED: Smaller radius
+              borderRadius: BorderRadius.circular(16.r), // REDUCED from 20.r
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -170,19 +171,19 @@ class _MainScreenState extends ConsumerState<MainScreen>
                     scale: 1.0 + (animationValue * 0.1),
                     child: Icon(
                       isSelected ? item.activeIcon : item.inactiveIcon,
-                      size: 22.sp, // FIXED: Smaller icon size
+                      size: 22.sp, // REDUCED from 24.sp
                       color: isSelected
                           ? AppTheme.primaryYellow
                           : AppTheme.textGray,
                     ),
                   ),
 
-                SizedBox(height: 2.h), // FIXED: Smaller spacing
+                SizedBox(height: 2.h), // REDUCED from 4.h
 
                 AnimatedDefaultTextStyle(
                   duration: const Duration(milliseconds: 200),
                   style: GoogleFonts.poppins(
-                    fontSize: isSelected ? 10.sp : 9.sp, // FIXED: Smaller font
+                    fontSize: isSelected ? 10.sp : 9.sp, // REDUCED font sizes
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                     color: isSelected
                         ? AppTheme.primaryYellow
@@ -204,8 +205,8 @@ class _MainScreenState extends ConsumerState<MainScreen>
 
   Widget _buildCreateButton(bool isSelected, double animationValue) {
     return Container(
-      width: 28.w, // FIXED: Smaller size
-      height: 28.h, // FIXED: Smaller size
+      width: 28.w, // REDUCED from 32.w
+      height: 28.h, // REDUCED from 32.h
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -215,7 +216,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(14.r), // FIXED: Smaller radius
+        borderRadius: BorderRadius.circular(14.r), // REDUCED from 16.r
         boxShadow: [
           BoxShadow(
             color: AppTheme.primaryYellow.withOpacity(0.4),
@@ -229,7 +230,7 @@ class _MainScreenState extends ConsumerState<MainScreen>
         child: Icon(
           Icons.add_rounded,
           color: AppTheme.darkBackground,
-          size: 18.sp, // FIXED: Smaller icon
+          size: 18.sp, // REDUCED from 20.sp
         ),
       ),
     );
