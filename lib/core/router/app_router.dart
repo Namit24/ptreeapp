@@ -15,6 +15,7 @@ import '../../features/projects/screens/project_detail_screen.dart';
 import '../../features/events/screens/event_detail_screen.dart';
 import '../../features/profile/screens/profile_setup_screen.dart';
 import '../../features/posts/screens/create_post_screen.dart';
+import '../../features/search/screens/search_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -97,16 +98,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Root route that handles initial navigation
       GoRoute(
         path: '/',
-        redirect: (context, state) {
+        builder: (context, state) {
           final session = Supabase.instance.client.auth.currentSession;
           final isLoggedIn = session?.user != null;
 
           if (!isLoggedIn) {
-            return '/login';
+            return const LoginScreen();
           }
 
-          // If logged in, let the main redirect logic handle it
-          return '/home';
+          return MainScreen(location: state.matchedLocation);
         },
       ),
       GoRoute(
@@ -140,7 +140,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/home',
         builder: (context, state) {
           print('Building home screen');
-          return const MainScreen();
+          return MainScreen(location: state.matchedLocation);
+        },
+      ),
+      GoRoute(
+        path: '/search',
+        builder: (context, state) {
+          print('Building search screen');
+          return MainScreen(location: state.matchedLocation);
         },
       ),
       GoRoute(
@@ -148,6 +155,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => ProfileScreen(
           userId: state.pathParameters['id']!,
         ),
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) {
+          print('Building profile screen');
+          return MainScreen(location: state.matchedLocation);
+        },
       ),
       GoRoute(
         path: '/project/:id',

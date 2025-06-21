@@ -6,11 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/providers/auth_provider.dart';
-import '../providers/feed_provider.dart';
 import '../providers/feed_posts_provider.dart';
-import '../widgets/project_card.dart';
-import '../widgets/event_card.dart';
-import '../widgets/spotlight_section.dart';
 import '../../posts/widgets/post_card.dart';
 import '../../posts/widgets/post_search_delegate.dart';
 
@@ -28,30 +24,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+
+    // Load feed posts when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(feedPostsProvider.notifier).loadFeedPosts();
+    });
   }
 
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      ref.read(feedProvider.notifier).loadMore();
+      // Load more posts when reaching bottom
+      ref.read(feedPostsProvider.notifier).loadFeedPosts();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final feedState = ref.watch(feedProvider);
     final user = ref.watch(authProvider).user;
 
     return Scaffold(
       backgroundColor: AppTheme.primaryWhite,
-      // IMPROVED HEADER - Better spacing
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(56.h), // Standard height
+        preferredSize: Size.fromHeight(60),
         child: Container(
           padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + 4.h, // Reduced top padding
-            left: 16.w,
-            right: 16.w,
-            bottom: 4.h, // Reduced bottom padding
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 16,
+            right: 16,
+            bottom: 8,
           ),
           decoration: BoxDecoration(
             color: AppTheme.primaryWhite,
@@ -64,10 +64,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           child: Row(
             children: [
-              // Modern Logo
+              // Logo
               Container(
-                width: 28.w, // Slightly smaller
-                height: 28.h,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -77,7 +77,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(7.r),
+                  borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.primaryYellow.withOpacity(0.2),
@@ -89,22 +89,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Icon(
                   Icons.account_tree_rounded,
                   color: AppTheme.primaryBlack,
-                  size: 16.sp,
+                  size: 18,
                 ),
               ),
-              SizedBox(width: 10.w),
+              SizedBox(width: 12),
               Text(
                 'ProjecTree',
                 style: GoogleFonts.inter(
-                  fontSize: 18.sp, // Slightly smaller
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.primaryBlack,
                   letterSpacing: -0.5,
                 ),
               ),
               const Spacer(),
-              // Modern Action Buttons
-              _buildModernActionButton(Icons.search, () {
+              // Action buttons
+              _buildActionButton(Icons.search, () {
                 final feedPostsState = ref.read(feedPostsProvider);
                 if (feedPostsState.posts.isNotEmpty) {
                   showSearch(
@@ -113,10 +113,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   );
                 }
               }),
-              SizedBox(width: 8.w),
-              _buildModernActionButton(Icons.notifications_none, () {}),
-              SizedBox(width: 8.w),
-              _buildModernActionButton(Icons.chat_bubble_outline, () {}),
+              SizedBox(width: 12),
+              _buildActionButton(Icons.notifications_none, () {}),
             ],
           ),
         ),
@@ -126,133 +124,68 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           await ref.read(feedPostsProvider.notifier).refresh();
         },
         color: AppTheme.primaryYellow,
-        child: CustomScrollView(
-          controller: _scrollController,
-          slivers: [
-            // Spotlight Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.only(top: 8.h), // Reduced top padding
-                child: const SpotlightSection(),
-              ).animate().fadeIn(duration: 600.ms),
-            ),
-            
-            // Recent Projects Horizontal Scroll
-            SliverToBoxAdapter(
-              child: _buildHorizontalSection(
-                'Recent Projects',
-                Icons.lightbulb_outline,
-                _buildProjectsHorizontal(),
-              ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
-            ),
-            
-            // Upcoming Events Horizontal Scroll
-            SliverToBoxAdapter(
-              child: _buildHorizontalSection(
-                'Upcoming Events',
-                Icons.event_outlined,
-                _buildEventsHorizontal(),
-              ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
-            ),
-            
-            // Feed Header
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h), // Reduced padding
-                child: Text(
-                  'Your Feed',
-                  style: GoogleFonts.inter(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryBlack,
-                  ),
-                ),
-              ).animate().fadeIn(duration: 600.ms, delay: 600.ms),
-            ),
-            
-            // Main Feed
-            Consumer(
-              builder: (context, ref, child) {
-                final feedPostsState = ref.watch(feedPostsProvider);
-                
-                // Load feed posts when screen loads
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  final authState = ref.read(authProvider);
-                  if (authState.user != null && feedPostsState.posts.isEmpty && !feedPostsState.isLoading) {
-                    ref.read(feedPostsProvider.notifier).loadFeedPosts();
-                  }
-                });
-                
-                if (feedPostsState.isLoading) {
-                  return SliverFillRemaining(
-                    child: _buildLoadingState(),
-                  );
-                }
-                
-                if (feedPostsState.error != null) {
-                  return SliverFillRemaining(
-                    child: _buildErrorState(feedPostsState.error),
-                  );
-                }
-                
-                if (feedPostsState.posts.isEmpty) {
-                  return SliverToBoxAdapter(
-                    child: Container(
-                      padding: EdgeInsets.all(24.w),
-                      margin: EdgeInsets.symmetric(horizontal: 16.w),
-                      decoration: BoxDecoration(
-                        color: AppTheme.glassBackground,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: AppTheme.glassBorder),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 48.sp,
-                            color: AppTheme.neutralGray,
+        child: Consumer(
+          builder: (context, ref, child) {
+            final feedPostsState = ref.watch(feedPostsProvider);
+
+            if (feedPostsState.isLoading && feedPostsState.posts.isEmpty) {
+              return _buildLoadingState();
+            }
+
+            if (feedPostsState.error != null && feedPostsState.posts.isEmpty) {
+              return _buildErrorState(feedPostsState.error);
+            }
+
+            if (feedPostsState.posts.isEmpty) {
+              return _buildEmptyState();
+            }
+
+            return CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // Feed Header
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.home_filled,
+                          color: AppTheme.primaryYellow,
+                          size: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Your Feed',
+                          style: GoogleFonts.inter(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.primaryBlack,
                           ),
-                          SizedBox(height: 12.h),
-                          Text(
-                            'No posts in your feed yet',
-                            style: GoogleFonts.inter(
-                              color: AppTheme.primaryBlack,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 8.h),
-                          Text(
-                            'Follow other users to see their posts here!',
-                            style: GoogleFonts.inter(
-                              color: AppTheme.neutralGray,
-                              fontSize: 14.sp,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  );
-                }
-                
-                return SliverList(
+                  ).animate().fadeIn(duration: 600.ms),
+                ),
+
+                // Posts List
+                SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
+                        (context, index) {
                       final post = feedPostsState.posts[index];
-                      
+
                       return Padding(
-                        padding: EdgeInsets.only(bottom: 12.h, left: 16.w, right: 16.w),
+                        padding: EdgeInsets.only(bottom: 16, left: 16, right: 16),
                         child: Container(
                           decoration: BoxDecoration(
                             color: AppTheme.glassBackground,
-                            borderRadius: BorderRadius.circular(12.r),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppTheme.glassBorder),
                             boxShadow: [
                               BoxShadow(
                                 color: AppTheme.shadowColor,
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
@@ -268,263 +201,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     },
                     childCount: feedPostsState.posts.length,
                   ),
-                );
-              },
-            ),
-            
-            // Bottom padding for navigation - IMPROVED
-            SliverToBoxAdapter(
-              child: SizedBox(height: 80.h), // Reduced from 100.h
-            ),
-          ],
+                ),
+
+                // Loading indicator at bottom
+                if (feedPostsState.isLoading && feedPostsState.posts.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryYellow,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Bottom padding for navigation
+                SliverToBoxAdapter(
+                  child: SizedBox(height: 100),
+                ),
+              ],
+            );
+          },
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/create-post'),
         backgroundColor: AppTheme.primaryYellow,
+        elevation: 8,
         child: Icon(
           Icons.add,
           color: AppTheme.primaryBlack,
-          size: 28.sp,
+          size: 28,
         ),
       ),
     );
   }
 
-  Widget _buildModernActionButton(IconData icon, VoidCallback onPressed) {
+  Widget _buildActionButton(IconData icon, VoidCallback onPressed) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        width: 36.w, // Slightly smaller
-        height: 36.h,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(18.r),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Icon(
           icon,
           color: AppTheme.primaryBlack,
-          size: 22.sp, // Slightly smaller
+          size: 24,
         ),
-      ),
-    );
-  }
-
-  Widget _buildHorizontalSection(String title, IconData icon, Widget content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h), // Reduced padding
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(6.w), // Slightly smaller
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryYellow.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6.r),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primaryYellow,
-                  size: 18.sp,
-                ),
-              ),
-              SizedBox(width: 10.w),
-              Text(
-                title,
-                style: GoogleFonts.inter(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryBlack,
-                ),
-              ),
-            ],
-          ),
-        ),
-        content,
-        SizedBox(height: 16.h), // Reduced spacing
-      ],
-    );
-  }
-
-  Widget _buildProjectsHorizontal() {
-    return SizedBox(
-      height: 180.h, // Slightly smaller
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Container(
-            width: 260.w, // Slightly smaller
-            margin: EdgeInsets.only(right: 12.w), // Reduced margin
-            decoration: BoxDecoration(
-              color: AppTheme.glassBackground,
-              borderRadius: BorderRadius.circular(12.r), // Slightly smaller radius
-              border: Border.all(color: AppTheme.glassBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.shadowColor,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  height: 100.h, // Smaller image area
-                  decoration: BoxDecoration(
-                    color: AppTheme.lightGray,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(12.r)),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.image,
-                      size: 32.sp,
-                      color: AppTheme.neutralGray,
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(10.w), // Reduced padding
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Sample Project ${index + 1}',
-                        style: GoogleFonts.inter(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.primaryBlack,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      SizedBox(height: 3.h),
-                      Text(
-                        'Project description here...',
-                        style: GoogleFonts.inter(
-                          fontSize: 11.sp,
-                          color: AppTheme.neutralGray,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEventsHorizontal() {
-    return SizedBox(
-      height: 140.h, // Smaller height
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w),
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Container(
-            width: 220.w, // Smaller width
-            margin: EdgeInsets.only(right: 12.w),
-            decoration: BoxDecoration(
-              color: AppTheme.glassBackground,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: AppTheme.glassBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.shadowColor,
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(12.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(6.w),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryYellow.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                        child: Icon(
-                          Icons.event,
-                          color: AppTheme.primaryYellow,
-                          size: 14.sp,
-                        ),
-                      ),
-                      SizedBox(width: 6.w),
-                      Text(
-                        'Dec ${20 + index}',
-                        style: GoogleFonts.inter(
-                          fontSize: 11.sp,
-                          color: AppTheme.primaryYellow,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Sample Event ${index + 1}',
-                    style: GoogleFonts.inter(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryBlack,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    'Event description and details...',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.sp,
-                      color: AppTheme.neutralGray,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 12.sp,
-                        color: AppTheme.neutralGray,
-                      ),
-                      SizedBox(width: 3.w),
-                      Expanded(
-                        child: Text(
-                          'Main Auditorium',
-                          style: GoogleFonts.inter(
-                            fontSize: 10.sp,
-                            color: AppTheme.neutralGray,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -538,11 +266,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             color: AppTheme.primaryYellow,
             strokeWidth: 3,
           ),
-          SizedBox(height: 16.h),
+          SizedBox(height: 16),
           Text(
             'Loading your feed...',
             style: GoogleFonts.inter(
-              fontSize: 14.sp,
+              fontSize: 16,
               color: AppTheme.neutralGray,
             ),
           ),
@@ -553,46 +281,150 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildErrorState(dynamic error) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 60.w, // Smaller error icon
-            height: 60.h,
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(30.r),
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(40),
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 40,
+                color: Colors.red.shade400,
+              ),
             ),
-            child: Icon(
-              Icons.error_outline,
-              size: 30.sp,
-              color: Colors.red.shade400,
+            SizedBox(height: 24),
+            Text(
+              'Something went wrong',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.primaryBlack,
+              ),
             ),
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'Something went wrong',
-            style: GoogleFonts.inter(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.primaryBlack,
+            SizedBox(height: 8),
+            Text(
+              'We couldn\'t load your feed right now',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: AppTheme.neutralGray,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-          SizedBox(height: 6.h),
-          Text(
-            'We couldn\'t load your feed right now',
-            style: GoogleFonts.inter(
-              fontSize: 13.sp,
-              color: AppTheme.neutralGray,
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => ref.read(feedPostsProvider.notifier).refresh(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryYellow,
+                foregroundColor: AppTheme.primaryBlack,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Try Again',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 20.h),
-          ElevatedButton(
-            onPressed: () => ref.read(feedProvider.notifier).refresh(),
-            child: Text('Try Again'),
-          ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppTheme.primaryYellow.withOpacity(0.1),
+                    AppTheme.primaryYellow.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(60),
+                border: Border.all(
+                  color: AppTheme.primaryYellow.withOpacity(0.2),
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.people_outline,
+                size: 60,
+                color: AppTheme.primaryYellow,
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'No posts yet!',
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.primaryBlack,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Follow more users to see their posts in your feed',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: AppTheme.neutralGray,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => context.push('/search'),
+                  icon: Icon(Icons.search, size: 20),
+                  label: Text('Find Users'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryYellow,
+                    foregroundColor: AppTheme.primaryBlack,
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.push('/create-post'),
+                  icon: Icon(Icons.add, size: 20),
+                  label: Text('Create Post'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppTheme.primaryYellow,
+                    side: BorderSide(color: AppTheme.primaryYellow),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

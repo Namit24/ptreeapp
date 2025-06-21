@@ -57,7 +57,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
   Future<void> _createPost() async {
     final content = _contentController.text.trim();
-    
+
     // Allow posting with just text, just image, or both
     if (content.isEmpty && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +82,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     });
 
     try {
+      // FIXED: Remove userId parameter - the provider gets it internally
       final success = await ref.read(postsProvider.notifier).createPost(
         content: content, // Can be empty if only image
         imageFile: _selectedImage,
@@ -97,7 +98,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         } else {
           successMessage = 'Image post created successfully!';
         }
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -112,7 +113,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.r)),
           ),
         );
-        context.go('/profile'); // Navigate to profile to see the new post
+        context.go('/home'); // Navigate to feed to see the new post
       } else if (mounted) {
         final postsState = ref.read(postsProvider);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -188,21 +189,21 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
             onPressed: _isLoading ? null : _createPost,
             child: _isLoading
                 ? SizedBox(
-                    width: 20.w,
-                    height: 20.h,
-                    child: CircularProgressIndicator(
-                      color: AppTheme.primaryYellow,
-                      strokeWidth: 2,
-                    ),
-                  )
+              width: 20.w,
+              height: 20.h,
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryYellow,
+                strokeWidth: 2,
+              ),
+            )
                 : Text(
-                    'Post',
-                    style: GoogleFonts.poppins(
-                      color: AppTheme.primaryYellow,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+              'Post',
+              style: GoogleFonts.poppins(
+                color: AppTheme.primaryYellow,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           SizedBox(width: 8.w),
         ],
@@ -223,13 +224,13 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                       : null,
                   child: profile?['profile_image_url'] == null
                       ? Text(
-                          (profile?['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            color: AppTheme.primaryYellow,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        )
+                    (profile?['full_name'] ?? 'U').substring(0, 1).toUpperCase(),
+                    style: GoogleFonts.poppins(
+                      color: AppTheme.primaryYellow,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
                       : null,
                 ),
                 SizedBox(width: 12.w),
@@ -283,8 +284,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                   height: 1.4,
                 ),
                 decoration: InputDecoration(
-                  hintText: _selectedImage != null 
-                      ? "Add a caption (optional)..." 
+                  hintText: _selectedImage != null
+                      ? "Add a caption (optional)..."
                       : "What's on your mind?",
                   hintStyle: GoogleFonts.poppins(
                     color: AppTheme.textGray,
